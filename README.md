@@ -40,10 +40,11 @@ npm install
 
 `.env` 파일 생성
 ```text
-PORT=3000
+DB_PORT=3306
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=your_db_password
+DB_SCHEMA=schema_name
 JWT_SECRET=your_secret_key
 ```
 ---
