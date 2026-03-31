@@ -2,6 +2,7 @@ import express from "express";
 
 import userRoutes from "./routes/user/userRoutes.js";
 import authRoutes from "./routes/auth/authRoutes.js";
+import regionRoutes from "./routes/region/regionRoutes.js";
 
 import errorHandler from "./middleware/errorHandler.js";
 
@@ -12,6 +13,7 @@ app.use(express.json());
 // 라우터
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/regions", regionRoutes);
 
 // 에러 핸들러 (항상 마지막!)
 app.use(errorHandler);
