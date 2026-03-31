@@ -1,4 +1,4 @@
-import conn from "../config/db.js";
+import conn from "../../config/db.js";
 
 // 기본 전체 조회
 export const getAll = async() => {

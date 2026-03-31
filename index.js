@@ -1,8 +1,7 @@
 import express from "express";
 
-import userRoutes from "./routes/userRoutes.js";
-import volunteerRoutes from "./routes/volunteerRoutes.js";
 import userRoutes from "./routes/user/userRoutes.js";
+import volunteerRoutes from "./routes/volunteer/volunteerRoutes.js";
 import authRoutes from "./routes/auth/authRoutes.js";
 import regionRoutes from "./routes/region/regionRoutes.js";
 

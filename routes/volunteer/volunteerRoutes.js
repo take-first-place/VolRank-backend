@@ -5,7 +5,7 @@ import {
     getList,
     getListPage,
     getListSearch
-} from "../controllers/volunteer/volunteerController.js";
+} from "../../controllers/volunteer/volunteerController.js";
 
 // GET /api/volunteers
 router.get("/search", getListSearch);   // 검색
