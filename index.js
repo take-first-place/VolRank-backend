@@ -1,6 +1,8 @@
 import express from "express";
 
 import userRoutes from "./routes/user/userRoutes.js";
+import authRoutes from "./routes/auth/authRoutes.js";
+
 import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
@@ -9,6 +11,7 @@ app.use(express.json());
 
 // 라우터
 app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
 
 // 에러 핸들러 (항상 마지막!)
 app.use(errorHandler);
