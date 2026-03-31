@@ -22,7 +22,7 @@ export const getListPage = async (req, res) => {
         const page = Math.max(1, Number(req.query.page) || 1);
         const size = Math.min(50, Number(req.query.size) || 5);
         const result = await findPage(page, size);
-        return success(res, results, "페이징 성공", 200)
+        return success(res, result, "페이징 성공", 200);
     } catch (err) {
         console.error("페이징 실패: ", err);
         return fail(res, err.message || "페이징 실패", err.status || 500)

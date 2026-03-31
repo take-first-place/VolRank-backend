@@ -7,8 +7,7 @@ import {
 } from "../controllers/volunteer/volunteerController.js";
 
 // GET /api/volunteers
-router.get("/page", getListPage);
-
-router.get("/", getList);
+router.get("/page", getListPage);   // 페이징
+router.get("/", getList);   // 기본 전체 조회
 
 export default router;
