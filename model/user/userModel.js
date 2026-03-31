@@ -1,4 +1,4 @@
-import conn from "../config/db.js";
+import conn from "../../config/db.js";
 
 // 사용자 조회
 export const findByEmail = async (email) => {
