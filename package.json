@@ -12,7 +12,7 @@
     "resend": "^6.10.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.17"
+    "nodemon": "^3.1.14"
   },
   "name": "backend",
   "private": true,
