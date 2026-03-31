@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 
 import userRoutes from "./routes/userRoutes.js";
+import volunteerRoutes from "./routes/volunteerRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config();
@@ -12,6 +13,7 @@ app.use(express.json());
 
 // 라우터
 app.use("/api/users", userRoutes);
+app.use("/api/volunteers", volunteerRoutes);
 
 // 에러 핸들러 (항상 마지막!)
 app.use(errorHandler);
