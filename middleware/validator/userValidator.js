@@ -1,6 +1,6 @@
-const { body } = require("express-validator");
+import { body } from "express-validator";
 
-exports.registerValidator = [
+export const registerValidator = [
   body("username")
     .notEmpty()
     .withMessage("username은 필수입니다.")
@@ -24,7 +24,5 @@ exports.registerValidator = [
     .isLength({ min: 6 })
     .withMessage("비밀번호는 최소 6자"),
 
-  body("region_code")
-    .notEmpty()
-    .withMessage("region_code는 필수입니다."),
+  body("region_code").notEmpty().withMessage("region_code는 필수입니다."),
 ];

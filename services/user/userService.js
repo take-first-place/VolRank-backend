@@ -1,8 +1,8 @@
-const bcrypt = require("bcrypt");
-const userModel = require("../model/userModel");
+import bcrypt from "bcrypt";
+import * as userModel from "../../model/userModel.js";
 
 // == 회원 가입 ==
-const registerUser = async ({
+export const registerUser = async ({
   username,
   nickname,
   email,
@@ -28,8 +28,4 @@ const registerUser = async ({
   });
 
   return user;
-};
-
-module.exports = {
-  registerUser,
 };
