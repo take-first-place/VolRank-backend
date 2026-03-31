@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
-import { findByEmail } from "../../model/user/userModel";
+import bcrypt from "bcrypt";
+import { findByEmail } from "../../model/user/userModel.js";
 
 
 // 로그인
