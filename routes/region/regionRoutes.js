@@ -3,10 +3,11 @@ import {
   getSidoList,
   getSigunguList,
 } from "../../controllers/region/regionController.js";
+import { authMiddleware } from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.get("/sidos", getSidoList);
-router.get("/sigungu", getSigunguList);
+router.get("/sidos", authMiddleware, getSidoList);
+router.get("/sigungu", authMiddleware, getSigunguList);
 
 export default router;
