@@ -1,16 +1,10 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // 앱 비밀번호
-  },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const sendMail = async (to, subject, html) => {
-  await transporter.sendMail({
-    from: `"MyApp" <${process.env.EMAIL_USER}>`,
+  await resend.emails.send({
+    from: "onboarding@resend.dev", // 도메인 없어도 이걸로 그냥 됨
     to,
     subject,
     html,
