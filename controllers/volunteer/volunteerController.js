@@ -27,4 +27,4 @@ export const getListPage = async (req, res) => {
         console.error("페이징 실패: ", err);
         return fail(res, err.message || "페이징 실패", err.status || 500)
     }
-}
+};

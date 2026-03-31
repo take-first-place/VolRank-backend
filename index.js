@@ -1,11 +1,12 @@
 import express from "express";
-import dotenv from "dotenv";
 
 import userRoutes from "./routes/userRoutes.js";
 import volunteerRoutes from "./routes/volunteerRoutes.js";
-import errorHandler from "./middleware/errorHandler.js";
+import userRoutes from "./routes/user/userRoutes.js";
+import authRoutes from "./routes/auth/authRoutes.js";
+import regionRoutes from "./routes/region/regionRoutes.js";
 
-dotenv.config();
+import errorHandler from "./middleware/errorHandler.js";
 
 const app = express();
 
@@ -14,6 +15,8 @@ app.use(express.json());
 // 라우터
 app.use("/api/users", userRoutes);
 app.use("/api/volunteers", volunteerRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/regions", regionRoutes);
 
 // 에러 핸들러 (항상 마지막!)
 app.use(errorHandler);
