@@ -1,6 +1,7 @@
 import express from "express";
 
 import userRoutes from "./routes/user/userRoutes.js";
+import volunteerRoutes from "./routes/volunteer/volunteerRoutes.js";
 import authRoutes from "./routes/auth/authRoutes.js";
 import regionRoutes from "./routes/region/regionRoutes.js";
 
@@ -12,6 +13,7 @@ app.use(express.json());
 
 // 라우터
 app.use("/api/users", userRoutes);
+app.use("/api/volunteers", volunteerRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/regions", regionRoutes);
 
