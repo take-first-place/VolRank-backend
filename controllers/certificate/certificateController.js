@@ -2,6 +2,7 @@ import {
   uploadCertificateService,
   getMyCertificatesService,
   getCertificatesByParticipationService,
+  reviewCertificateService,
 } from "../../services/certificate/certificateService.js";
 import { success } from "../../utils/response.js";
 import asyncHandler from "../../middleware/asyncHandler.js";
@@ -40,4 +41,20 @@ export const getCertificatesByParticipation = asyncHandler(async (req, res) => {
   );
 
   return success(res, data, "참여 이력별 인증서 조회 성공", 200);
+});
+
+// 인증서 검토 처리 컨트롤러
+export const reviewCertificate = asyncHandler(async (req, res) => {
+  const certificateId = Number(req.params.certificateId);
+  const reviewerId = req.user.id;
+  const { status, rejectedReason } = req.body;
+
+  const data = await reviewCertificateService({
+    certificateId,
+    reviewerId,
+    status,
+    rejectedReason,
+  });
+
+  return success(res, data, "인증서 검토 처리 성공", 200);
 });

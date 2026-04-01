@@ -4,6 +4,8 @@ import {
   createCertificateSubmission,
   findCertificatesByUserId,
   findCertificatesByParticipationId,
+  findCertificateById,
+  reviewCertificate,
 } from "../../model/certificate/certificateModel.js";
 import { generateFileHash } from "../../utils/fileHash.js";
 
@@ -83,4 +85,46 @@ export const getCertificatesByParticipationService = async (
   }
 
   return await findCertificatesByParticipationId(participationId);
+};
+
+// 관리자 인증서 검토 서비스 (승인/반려)
+export const reviewCertificateService = async ({
+  certificateId,
+  reviewerId,
+  status,
+  rejectedReason,
+}) => {
+  const certificate = await findCertificateById(certificateId);
+
+  if (!certificate) {
+    const error = new Error("인증서 제출 내역을 찾을 수 없습니다.");
+    error.status = 404;
+    throw error;
+  }
+
+  if (!["APPROVED", "REJECTED"].includes(status)) {
+    const error = new Error("status는 APPROVED 또는 REJECTED만 가능합니다.");
+    error.status = 400;
+    throw error;
+  }
+
+  if (status === "REJECTED" && !rejectedReason?.trim()) {
+    const error = new Error("반려 시 rejectedReason은 필수입니다.");
+    error.status = 400;
+    throw error;
+  }
+
+  await reviewCertificate({
+    certificateId,
+    status,
+    reviewerId,
+    rejectedReason: status === "REJECTED" ? rejectedReason.trim() : null,
+  });
+
+  return {
+    certificateId,
+    status,
+    reviewerId,
+    rejectedReason: status === "REJECTED" ? rejectedReason.trim() : null,
+  };
 };
