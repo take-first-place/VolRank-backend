@@ -5,6 +5,8 @@ import userRoutes from "./routes/user/userRoutes.js";
 import volunteerRoutes from "./routes/volunteer/volunteerRoutes.js";
 import authRoutes from "./routes/auth/authRoutes.js";
 import regionRoutes from "./routes/region/regionRoutes.js";
+import volunteerStatsRoutes from "./routes/volunteerStats/volunteerStatsRoutes.js";
+
 import certificateRoutes from "./routes/certificate/certificateRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
 
@@ -17,6 +19,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/volunteers", volunteerRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/regions", regionRoutes);
+app.use("/api/volunteer-stats", volunteerStatsRoutes);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/certificates", certificateRoutes);
 
