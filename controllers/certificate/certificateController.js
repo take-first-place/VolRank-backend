@@ -7,7 +7,7 @@ import {
 import { success } from "../../utils/response.js";
 import asyncHandler from "../../middleware/asyncHandler.js";
 
-// 인증서 업로드 컨트롤러
+// 인증서 업로드
 export const uploadCertificate = asyncHandler(async (req, res) => {
   const participationId = Number(req.body.volunteerParticipationId);
   const userId = req.user.id;
@@ -22,7 +22,7 @@ export const uploadCertificate = asyncHandler(async (req, res) => {
   return success(res, data, "인증서 업로드 성공", 201);
 });
 
-// 내 인증서 목록 조회 컨트롤러
+// 내가 제출했던 모든 인증서 기록 조회
 export const getMyCertificates = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const data = await getMyCertificatesService(userId);
@@ -30,7 +30,7 @@ export const getMyCertificates = asyncHandler(async (req, res) => {
   return success(res, data, "내 인증서 목록 조회 성공", 200);
 });
 
-// 참여 이력별 인증서 조회 컨트롤러
+// 봉사활동별 제출한 인증서 목록 조회
 export const getCertificatesByParticipation = asyncHandler(async (req, res) => {
   const participationId = Number(req.params.participationId);
   const userId = req.user.id;
@@ -43,7 +43,7 @@ export const getCertificatesByParticipation = asyncHandler(async (req, res) => {
   return success(res, data, "참여 이력별 인증서 조회 성공", 200);
 });
 
-// 인증서 검토 처리 컨트롤러
+// 제출된 인증서 검토 처리
 export const reviewCertificate = asyncHandler(async (req, res) => {
   const certificateId = Number(req.params.certificateId);
   const reviewerId = req.user.id;
