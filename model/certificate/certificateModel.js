@@ -122,3 +122,30 @@ export const findCertificateById = async (certificateId) => {
   const [rows] = await pool.query(sql, [certificateId]);
   return rows[0];
 };
+
+// 인증서 검토 결과 업데이트 (승인/반려)
+export const reviewCertificate = async ({
+  certificateId,
+  status,
+  reviewerId,
+  rejectedReason,
+}) => {
+  const sql = `
+    UPDATE certificate_submission
+    SET
+      status = ?,
+      reviewer_id = ?,
+      reviewed_at = NOW(),
+      rejected_reason = ?
+    WHERE id = ?
+  `;
+
+  const [result] = await pool.query(sql, [
+    status,
+    reviewerId,
+    rejectedReason,
+    certificateId,
+  ]);
+
+  return result;
+};
