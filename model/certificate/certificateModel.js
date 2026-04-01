@@ -4,9 +4,13 @@ import pool from "../../config/db.js";
 export const findParticipationById = async (participationId) => {
   const sql = `
     SELECT 
-      id, user_id, 
-      volunteer_id, 
-      participation_status
+      id,
+      user_id,
+      activity_title,
+      organization_name,
+      participation_status,
+      requested_volunteer_hour,
+      approved_volunteer_hour
     FROM volunteer_participation
     WHERE id = ?
   `;
@@ -26,6 +30,7 @@ export const findLastSubmissionNo = async (participationId) => {
 };
 
 // 인증서 제출 기록 생성
+// 불필요한 외곽 괄호를 제거하고 async 화살표 함수로 정의
 export const createCertificateSubmission = async ({
   participationId,
   fileUrl,
@@ -39,12 +44,12 @@ export const createCertificateSubmission = async ({
       file_hash,
       status,
       submission_no,
-      submitted_at,
-      created_at
+      submitted_at
     )
-    VALUES (?, ?, ?, 'PENDING', ?, NOW(), NOW())
+    VALUES (?, ?, ?, 'PENDING', ?, NOW())
   `;
 
+  // 이제 await가 정상적으로 async 함수 내부에서 작동합니다.
   const [result] = await pool.query(sql, [
     participationId,
     fileUrl,
@@ -69,14 +74,15 @@ export const findCertificatesByUserId = async (userId) => {
       cs.reviewed_at,
       cs.rejected_reason,
       vp.user_id,
-      v.title AS volunteer_title
+      vp.activity_title,
+      vp.organization_name,
+      vp.start_date,
+      vp.end_date
     FROM certificate_submission cs
     INNER JOIN volunteer_participation vp
       ON cs.volunteer_participation_id = vp.id
-    INNER JOIN volunteer v
-      ON vp.volunteer_id = v.id
     WHERE vp.user_id = ?
-    ORDER BY cs.created_at DESC
+    ORDER BY cs.submitted_at DESC, cs.submission_no DESC
   `;
   const [rows] = await pool.query(sql, [userId]);
   return rows;
@@ -95,8 +101,7 @@ export const findCertificatesByParticipationId = async (participationId) => {
       submitted_at,
       reviewed_at,
       reviewer_id,
-      rejected_reason,
-      created_at
+      rejected_reason
     FROM certificate_submission
     WHERE volunteer_participation_id = ?
     ORDER BY submission_no DESC

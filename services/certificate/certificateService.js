@@ -16,7 +16,7 @@ export const uploadCertificateService = async ({
   file,
 }) => {
   if (!file) {
-    const error = new Error("업로드할 파일이 없습니다.");
+    const error = new Error("업로드할 인증서가 없습니다.");
     error.status = 400;
     throw error;
   }
