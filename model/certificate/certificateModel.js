@@ -29,8 +29,55 @@ export const findLastSubmissionNo = async (participationId) => {
   return rows[0]?.lastSubmissionNo ?? 0;
 };
 
+// 최신 인증서 제출 내역 조회
+export const findLatestCertificateByParticipationId = async (
+  participationId,
+) => {
+  const sql = `
+    SELECT
+      id,
+      volunteer_participation_id,
+      file_url,
+      file_hash,
+      status,
+      submission_no,
+      submitted_at,
+      reviewed_at,
+      reviewer_id,
+      rejected_reason
+    FROM certificate_submission
+    WHERE volunteer_participation_id = ?
+    ORDER BY submission_no DESC
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.query(sql, [participationId]);
+  return rows[0];
+};
+
+// 동일 참여 이력에 동일 파일 해시가 이미 있는지 조회
+export const findCertificateByParticipationIdAndFileHash = async ({
+  participationId,
+  fileHash,
+}) => {
+  const sql = `
+    SELECT
+      id,
+      volunteer_participation_id,
+      file_hash,
+      submission_no,
+      status
+    FROM certificate_submission
+    WHERE volunteer_participation_id = ?
+      AND file_hash = ?
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.query(sql, [participationId, fileHash]);
+  return rows[0];
+};
+
 // 인증서 제출 기록 생성
-// 불필요한 외곽 괄호를 제거하고 async 화살표 함수로 정의
 export const createCertificateSubmission = async ({
   participationId,
   fileUrl,
@@ -49,7 +96,6 @@ export const createCertificateSubmission = async ({
     VALUES (?, ?, ?, 'PENDING', ?, NOW())
   `;
 
-  // 이제 await가 정상적으로 async 함수 내부에서 작동합니다.
   const [result] = await pool.query(sql, [
     participationId,
     fileUrl,
@@ -107,6 +153,38 @@ export const findCertificatesByParticipationId = async (participationId) => {
     ORDER BY submission_no DESC
   `;
   const [rows] = await pool.query(sql, [participationId]);
+  return rows;
+};
+
+// 관리자용 대기 중 인증서 목록 조회
+export const findPendingCertificates = async () => {
+  const sql = `
+    SELECT
+      cs.id,
+      cs.volunteer_participation_id,
+      cs.file_url,
+      cs.file_hash,
+      cs.status,
+      cs.submission_no,
+      cs.submitted_at,
+      vp.user_id,
+      vp.activity_title,
+      vp.organization_name,
+      vp.start_date,
+      vp.end_date,
+      vp.requested_volunteer_hour,
+      u.nickname,
+      u.email
+    FROM certificate_submission cs
+    INNER JOIN volunteer_participation vp
+      ON cs.volunteer_participation_id = vp.id
+    INNER JOIN users u
+      ON vp.user_id = u.id
+    WHERE cs.status = 'PENDING'
+    ORDER BY cs.submitted_at ASC, cs.submission_no ASC
+  `;
+
+  const [rows] = await pool.query(sql);
   return rows;
 };
 
