@@ -9,6 +9,7 @@ import volunteerStatsRoutes from "./routes/volunteerStats/volunteerStatsRoutes.j
 
 import certificateRoutes from "./routes/certificate/certificateRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
+import { fetchAndSaveVolunteers } from "./services/publicAPI/publicAPIService.js";
 
 const app = express();
 
@@ -28,6 +29,8 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
+
+  await fetchAndSaveVolunteers();
 });
