@@ -10,7 +10,7 @@ import rankRoutes from "./routes/rank/rankRoutes.js";
 
 import certificateRoutes from "./routes/certificate/certificateRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
-import { fetchAndSaveVolunteers } from "./services/publicAPI/publicAPIService.js";
+import "./cron/volunteerCron.js";
 
 const app = express();
 
@@ -31,8 +31,6 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
-
-  await fetchAndSaveVolunteers();
 });
