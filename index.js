@@ -6,7 +6,6 @@ import volunteerRoutes from "./routes/volunteer/volunteerRoutes.js";
 import authRoutes from "./routes/auth/authRoutes.js";
 import regionRoutes from "./routes/region/regionRoutes.js";
 import volunteerStatsRoutes from "./routes/volunteerStats/volunteerStatsRoutes.js";
-import rankRoutes from "./routes/rank/rankRoutes.js";
 
 import certificateRoutes from "./routes/certificate/certificateRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
@@ -23,7 +22,6 @@ app.use("/api/regions", regionRoutes);
 app.use("/api/volunteer-stats", volunteerStatsRoutes);
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use("/api/certificates", certificateRoutes);
-app.use("/api/rank", rankRoutes)
 
 // 에러 핸들러 (항상 마지막!)
 app.use(errorHandler);

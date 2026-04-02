@@ -1,13 +1,8 @@
-import { 
-    getNationalTop100,
-    getRegionalTop100,
-    getMyNationalRank, 
-    getMyRegionalRank 
-} from '../../model/rank/rankModel.js';
+import { rankModel } from './rankModel.js';
 
 // 전국 랭킹 조회
 export const getNationalRanking = async (userId) => {
-  const top100 = await getNationalTop100();
+  const top100 = await rankModel.getNationalTop100();
 
   // 비로그인
   if (!userId) {
@@ -27,13 +22,13 @@ export const getNationalRanking = async (userId) => {
   }
 
   // 밖이면 내 순위 따로 조회
-  const myRank = await getMyNationalRank(userId);
+  const myRank = await rankModel.getMyNationalRank(userId);
   return { top100: top100WithFlag, myRank };
 };
 
 // 지역별 랭킹 조회
 export const getRegionalRanking = async (regionCode, userId) => {
-  const top100 = await getRegionalTop100(regionCode);
+  const top100 = await rankModel.getRegionalTop100(regionCode);
 
   // 비로그인
   if (!userId) {
@@ -53,6 +48,6 @@ export const getRegionalRanking = async (regionCode, userId) => {
   }
 
   // 밖이면 내 순위 따로 조회
-  const myRank = await getMyRegionalRank(userId, regionCode);
+  const myRank = await rankModel.getMyRegionalRank(userId, regionCode);
   return { top100: top100WithFlag, myRank };
 };
