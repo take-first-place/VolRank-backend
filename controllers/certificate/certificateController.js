@@ -1,8 +1,9 @@
 import {
-  uploadCertificateService,
-  getMyCertificatesService,
-  getCertificatesByParticipationService,
-  reviewCertificateService,
+  uploadCertificate as uploadCertificateService,
+  getMyCertificates as getMyCertificatesService,
+  getCertificatesByParticipation as getCertificatesByParticipationService,
+  getPendingCertificates as getPendingCertificatesService,
+  reviewCertificate as reviewCertificateService,
 } from "../../services/certificate/certificateService.js";
 import { success } from "../../utils/response.js";
 import asyncHandler from "../../middleware/asyncHandler.js";
@@ -28,6 +29,13 @@ export const getMyCertificates = asyncHandler(async (req, res) => {
   const data = await getMyCertificatesService(userId);
 
   return success(res, data, "내 인증서 목록 조회 성공", 200);
+});
+
+// 관리자용 대기 중 인증서 목록 조회
+export const getPendingCertificates = asyncHandler(async (req, res) => {
+  const data = await getPendingCertificatesService();
+
+  return success(res, data, "대기 중 인증서 목록 조회 성공", 200);
 });
 
 // 봉사활동별 제출한 인증서 목록 조회

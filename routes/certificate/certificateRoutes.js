@@ -3,6 +3,7 @@ import {
   uploadCertificate,
   getMyCertificates,
   getCertificatesByParticipation,
+  getPendingCertificates,
   reviewCertificate,
 } from "../../controllers/certificate/certificateController.js";
 import { certificateUpload } from "../../middleware/upload.js";
@@ -19,6 +20,7 @@ router.post(
 );
 
 router.get("/my", authMiddleware, getMyCertificates);
+router.get("/admin/pending", authMiddleware, isAdmin, getPendingCertificates);
 router.get("/:participationId", authMiddleware, getCertificatesByParticipation);
 router.patch(
   "/:certificateId/review",
