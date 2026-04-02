@@ -1,3 +1,4 @@
+// 날짜 파싱 함수
 export const parseDate = (dateStr) => {
     if (!dateStr) return null;
 
@@ -10,4 +11,5 @@ export const parseDate = (dateStr) => {
     const min = str.slice(10, 12) || '00';
 
     return `${year}-${month}-${day} ${hour}:${min}:00`;
-}
+};
+

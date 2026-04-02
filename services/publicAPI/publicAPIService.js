@@ -1,11 +1,12 @@
 import axios from "axios";
 import { insertVolunteer } from "../../model/publicAPI/publicAPIModel.js";
-import { parseDate } from "../../utils/publicAPIDateParse.js";
+import { parseDate } from "../../utils/publicAPIUtil.js";
 
 const BASE_URL = process.env.VOLUNTEER_API_BASE_URL;
 const LIST_PATH = process.env.VOLUNTEER_LIST_PATH;
 const SERVICE_KEY = process.env.VOLUNTEER_API_KEY;
 
+// 봉사활동 목록 삽입
 export const fetchAndSaveVolunteers = async () => {
     const url = `${BASE_URL}${LIST_PATH}`;
 
@@ -22,11 +23,14 @@ export const fetchAndSaveVolunteers = async () => {
     for (const v of items) {
         const volunteer = {
             title: v.progrmSj || "",
+            description: v.progrmCn || "",
             organization_name: v.nanmmbyNm || "",
             place: v.actPlace || "",
-            start_date: parseDate(v.progrmBgnde),
-            end_date: parseDate(v.progrmEndde),
-            external_id: v.progrmRegistNo
+            recruit_start_at: parseDate(v.noticeBgnde),
+            recruit_end_at: parseDate(v.noticeEndde),
+            start_date: parseDate(String(v.progrmBgnde).concat(String(v.actBeginTm))),
+            end_date: parseDate(String(v.progrmEndde).concat(String(v.actEndTm))),
+            recruit_count: v.rcruitNmpr
         };
 
         await insertVolunteer(volunteer);
