@@ -2,8 +2,8 @@ import conn from "../../config/db.js";
 
 export const findVolunteers = async (query) => {
     const { page, size } = query;
-    const pageNum = Number(query.page);
-    const sizeNum = Number(query.size);
+    const pageNum = Number(query.page) || 1;
+    const sizeNum = Number(query.size) || 10;
 
     const offset = (pageNum - 1) * sizeNum;
 
