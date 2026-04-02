@@ -10,6 +10,7 @@ import rankRoutes from "./routes/rank/rankRoutes.js";
 
 import certificateRoutes from "./routes/certificate/certificateRoutes.js";
 import errorHandler from "./middleware/errorHandler.js";
+import "./cron/volunteerCron.js";
 
 const app = express();
 
