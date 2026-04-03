@@ -16,7 +16,7 @@ export const findAllSidos = async () => {
   return rows;
 };
 
-export const findSigunguBySidoCode = async (sidoCode) => {
+export const findChildRegionsByParentCode = async (parentCode) => {
   const sql = `
     SELECT 
       region_code AS regionCode,
@@ -24,11 +24,50 @@ export const findSigunguBySidoCode = async (sidoCode) => {
       level,
       parent_code AS parentCode
     FROM region
-    WHERE level = 2
-      AND parent_code = ?
+    WHERE parent_code = ?
     ORDER BY region_code ASC
   `;
 
-  const [rows] = await pool.query(sql, [sidoCode]);
+  const [rows] = await pool.query(sql, [parentCode]);
   return rows;
+};
+
+export const findRegionByNameAndLevel = async ({ name, level }) => {
+  const sql = `
+    SELECT
+      region_code,
+      name,
+      level,
+      parent_code
+    FROM region
+    WHERE name = ? AND level = ?
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.query(sql, [name, level]);
+  return rows[0] || null;
+};
+
+export const findChildRegionByNameAndParentCode = async ({
+  name,
+  parentCode,
+}) => {
+  const sql = `
+    SELECT
+      region_code,
+      name,
+      level,
+      parent_code
+    FROM region
+    WHERE name = ?
+      AND parent_code = ?
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.query(sql, [name, parentCode]);
+  return rows[0] || null;
+};
+
+export const findSidoByName = async (name) => {
+  return findRegionByNameAndLevel({ name, level: 1 });
 };
