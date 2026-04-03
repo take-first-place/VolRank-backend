@@ -72,24 +72,20 @@ export const findSidoByName = async (name) => {
   return findRegionByNameAndLevel({ name, level: 1 });
 };
 
-export const findDescendantRegionByNameUnderSido = async ({
-  name,
-  sidoCode,
-}) => {
+export const upsertRegion = async ({ regionCode, name, level, parentCode }) => {
   const sql = `
-    SELECT
+    INSERT INTO region (
       region_code,
       name,
       level,
       parent_code
-    FROM region
-    WHERE name = ?
-      AND region_code LIKE CONCAT(?, '%')
-      AND region_code <> ?
-    ORDER BY level DESC, CHAR_LENGTH(region_code) DESC
-    LIMIT 1
+    )
+    VALUES (?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      name = VALUES(name),
+      level = VALUES(level),
+      parent_code = VALUES(parent_code)
   `;
 
-  const [rows] = await pool.query(sql, [name, sidoCode, sidoCode]);
-  return rows[0] || null;
+  await pool.query(sql, [regionCode, name, level, parentCode]);
 };
