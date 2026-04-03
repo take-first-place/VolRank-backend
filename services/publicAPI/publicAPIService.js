@@ -4,38 +4,69 @@ import { parseDate } from "../../utils/publicAPIUtil.js";
 
 const BASE_URL = process.env.VOLUNTEER_API_BASE_URL;
 const LIST_PATH = process.env.VOLUNTEER_LIST_PATH;
+const DETAIL_PATH = process.env.VOLUNTEER_DETAIL_PATH;
 const SERVICE_KEY = process.env.VOLUNTEER_API_KEY;
 
 // 봉사활동 목록 삽입
 export const fetchAndSaveVolunteers = async () => {
-    const url = `${BASE_URL}${LIST_PATH}`;
-
-    const res = await axios.get(url, {
-        params: {
-            serviceKey: SERVICE_KEY,
-            _type: 'json',
-            numOfRows: 50
-        }
+  try {
+    // 목록 조회 (ID 추출용)
+    const listRes = await axios.get(`${BASE_URL}${LIST_PATH}`, {
+      params: {
+        serviceKey: SERVICE_KEY,
+        _type: 'json',
+        numOfRows: 50,
+      },
     });
 
-    const items = res.data.response.body.items.item;
+    const items = listRes.data.response.body.items.item;
 
-    for (const v of items) {
+    if (!items) return;
+
+    for (const item of Array.isArray(items) ? items : [items]) {
+      try {
+        // 상세 정보 조회 (progrmCn 등 상세 정보 가져오기 위함)
+        const detailRes = await axios.get(`${BASE_URL}${DETAIL_PATH}`, {
+            params: {
+                serviceKey: SERVICE_KEY,
+                progrmRegistNo: item.progrmRegistNo
+            }
+        });
+        
+        const d = detailRes.data.response.body.items.item;
+
+        // 모집 상태 매핑
+        const statusMap = {
+            '1': 'CLOSED',  // 모집 대기
+            '2': 'RECRUITING',  // 모집중
+            '3': 'FINISHED' // 모집 완료
+        }
+
+        // 데이터 객체 생성
         const volunteer = {
-            title: v.progrmSj || "",
-            description: v.progrmCn || "",
-            organization_name: v.nanmmbyNm || "",
-            place: v.actPlace || "",
-            recruit_start_at: parseDate(v.noticeBgnde),
-            recruit_end_at: parseDate(v.noticeEndde),
-            start_date: parseDate(String(v.progrmBgnde).concat(String(v.actBeginTm))),
-            end_date: parseDate(String(v.progrmEndde).concat(String(v.actEndTm))),
-            recruit_count: v.rcruitNmpr
+          title: d.progrmSj || "",
+          description: d.progrmCn || "",
+          volunteer_type: d.srvcClCode || "",
+          organization_name: d.mnnstNm || "",
+          place: d.actPlace || "",
+          recruit_start_at: parseDate(d.noticeBgnde),
+          recruit_end_at: parseDate(d.noticeEndde),
+          start_date: parseDate(d.progrmBgnde, d.actBeginTm),
+          end_date: parseDate(d.progrmEndde, d.actEndTm),
+          recruit_count: d.rcruitNmpr || 0,
+          volunteer_hour: (d.actEndTm - d.actBeginTm) || 0,
+          status: statusMap[d.progrmStatusSe] || 'FINISHED',
+          external_url: d.url,
+          external_id: String(d.progrmRegistNo)
         };
 
         await insertVolunteer(volunteer);
+        console.log(`저장 완료: ${volunteer.title}`);
+      } catch (err) {
+        console.error(`상세 데이터 처리 중 오류 (ID: ${item.progrmRegistNo}):`, err.message);
+      }
     }
-
-    console.log("봉사 데이터 저장 완료");
+  } catch (err) {
+    console.error("API 호출 중 치명적 오류: ", err.message);
+  }
 };
-
