@@ -19,13 +19,13 @@ const buildResolveResult = ({ region = null, sourceText = "" }) => {
 
 const findMatchedChildRegion = async ({ candidates, parentCode }) => {
   for (const candidate of candidates) {
-    const region = await findChildRegionByNameAndParentCode({
+    const matchedRegion = await findChildRegionByNameAndParentCode({
       name: candidate,
       parentCode,
     });
 
-    if (region) {
-      return region;
+    if (matchedRegion) {
+      return matchedRegion;
     }
   }
 
