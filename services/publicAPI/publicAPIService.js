@@ -2,10 +2,10 @@ import axios from "axios";
 import { insertVolunteer } from "../../model/publicAPI/publicAPIModel.js";
 import { parseDate } from "../../utils/publicAPIUtil.js";
 
-const BASE_URL = process.env.VOLUNTEER_API_BASE_URL;
+const BASE_URL = process.env.V1365_API_BASE_URL;
 const LIST_PATH = process.env.VOLUNTEER_LIST_PATH;
 const DETAIL_PATH = process.env.VOLUNTEER_DETAIL_PATH;
-const SERVICE_KEY = process.env.VOLUNTEER_API_KEY;
+const SERVICE_KEY = process.env.V1365_API_KEY;
 
 // 봉사활동 목록 삽입
 export const fetchAndSaveVolunteers = async () => {
@@ -14,7 +14,7 @@ export const fetchAndSaveVolunteers = async () => {
     const listRes = await axios.get(`${BASE_URL}${LIST_PATH}`, {
       params: {
         serviceKey: SERVICE_KEY,
-        _type: 'json',
+        _type: "json",
         numOfRows: 50,
       },
     });
@@ -27,20 +27,20 @@ export const fetchAndSaveVolunteers = async () => {
       try {
         // 상세 정보 조회 (progrmCn 등 상세 정보 가져오기 위함)
         const detailRes = await axios.get(`${BASE_URL}${DETAIL_PATH}`, {
-            params: {
-                serviceKey: SERVICE_KEY,
-                progrmRegistNo: item.progrmRegistNo
-            }
+          params: {
+            serviceKey: SERVICE_KEY,
+            progrmRegistNo: item.progrmRegistNo,
+          },
         });
-        
+
         const d = detailRes.data.response.body.items.item;
 
         // 모집 상태 매핑
         const statusMap = {
-            '1': 'CLOSED',  // 모집 대기
-            '2': 'RECRUITING',  // 모집중
-            '3': 'FINISHED' // 모집 완료
-        }
+          1: "CLOSED", // 모집 대기
+          2: "RECRUITING", // 모집중
+          3: "FINISHED", // 모집 완료
+        };
 
         // 데이터 객체 생성
         const volunteer = {
@@ -54,16 +54,19 @@ export const fetchAndSaveVolunteers = async () => {
           start_date: parseDate(d.progrmBgnde, d.actBeginTm),
           end_date: parseDate(d.progrmEndde, d.actEndTm),
           recruit_count: d.rcruitNmpr || 0,
-          volunteer_hour: (d.actEndTm - d.actBeginTm) || 0,
-          status: statusMap[d.progrmStatusSe] || 'FINISHED',
+          volunteer_hour: d.actEndTm - d.actBeginTm || 0,
+          status: statusMap[d.progrmStatusSe] || "FINISHED",
           external_url: d.url,
-          external_id: String(d.progrmRegistNo)
+          external_id: String(d.progrmRegistNo),
         };
 
         await insertVolunteer(volunteer);
         console.log(`저장 완료: ${volunteer.title}`);
       } catch (err) {
-        console.error(`상세 데이터 처리 중 오류 (ID: ${item.progrmRegistNo}):`, err.message);
+        console.error(
+          `상세 데이터 처리 중 오류 (ID: ${item.progrmRegistNo}):`,
+          err.message,
+        );
       }
     }
   } catch (err) {

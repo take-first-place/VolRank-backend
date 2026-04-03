@@ -71,3 +71,25 @@ export const findChildRegionByNameAndParentCode = async ({
 export const findSidoByName = async (name) => {
   return findRegionByNameAndLevel({ name, level: 1 });
 };
+
+export const findDescendantRegionByNameUnderSido = async ({
+  name,
+  sidoCode,
+}) => {
+  const sql = `
+    SELECT
+      region_code,
+      name,
+      level,
+      parent_code
+    FROM region
+    WHERE name = ?
+      AND region_code LIKE CONCAT(?, '%')
+      AND region_code <> ?
+    ORDER BY level DESC, CHAR_LENGTH(region_code) DESC
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.query(sql, [name, sidoCode, sidoCode]);
+  return rows[0] || null;
+};
