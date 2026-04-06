@@ -1,6 +1,45 @@
-import { findVolunteers } from "../../model/volunteer/volunteerModel.js";
+import { findVolunteers, createVolunteerPerformance } from "../../model/volunteer/volunteerModel.js";
 
 import { success, fail } from "../../utils/response.js";
+
+export const registrationVolunteerPerformance = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const {
+      activityTitle,
+      organizationName,
+      regionCode,
+      place,
+      startDate,
+      endDate,
+    } = req.body;
+
+    const result = await createVolunteerPerformance({
+      userId,
+      activityTitle,
+      organizationName,
+      regionCode,
+      place,
+      startDate,
+      endDate,
+    });
+
+    return success(
+      res, 
+      "봉사 실적 등록 성공", 
+      { insertId: result.insertId }
+    );
+    
+  } catch (err) {
+    console.error("등록 실패", err);
+    return fail(
+      res, 
+      err.message || "등록 실패", 
+      err.status || 500
+    );
+  }
+};
 
 export const getVolunteers = async (req, res) => {
   try {
