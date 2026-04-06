@@ -1,5 +1,45 @@
 import conn from "../../config/db.js";
 
+export const createVolunteerPerformance = async (volunteerData) => {
+  const {
+    userId,
+    activityTitle,
+    organizationName,
+    regionCode,
+    place,
+    startDate,
+    endDate,
+  } = volunteerData;
+
+  const sql = `
+        INSERT INTO volunteer_participation (
+            user_id,
+            activity_title,
+            organization_name,
+            region_code,
+            place,
+            start_date,
+            end_date,
+            requested_volunteer_hour,
+            approved_volunteer_hour,
+            created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, NOW())
+    `;
+
+  const [result] = await conn.query(sql, [
+    userId,
+    activityTitle,
+    organizationName,
+    regionCode,
+    place,
+    startDate,
+    endDate,
+  ]);
+
+  return result;
+};
+
 export const findVolunteers = async (query) => {
     const { page, size } = query;
     const pageNum = Number(query.page) || 1;
