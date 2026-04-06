@@ -1,31 +1,10 @@
 import axios from "axios";
 import { upsertRegion } from "../../model/region/regionModel.js";
 import { isTopLevelRegionName } from "../../utils/regionNameRules.js";
+import { legalRegionConfigValidator } from "../../middleware/validator/regionConfigValidator.js";
 
-const API_URL = process.env.LEGAL_REGION_API_URL;
-const SERVICE_KEY = process.env.LEGAL_REGION_API_KEY;
-
-const validateLegalRegionConfig = () => {
-  if (!API_URL) {
-    const error = new Error(
-      "LEGAL_REGION_API_URL 환경변수가 설정되지 않았습니다.",
-    );
-    error.status = 500;
-    throw error;
-  }
-
-  if (!SERVICE_KEY) {
-    const error = new Error(
-      "LEGAL_REGION_SERVICE_KEY 환경변수가 설정되지 않았습니다.",
-    );
-    error.status = 500;
-    throw error;
-  }
-};
-
-const normalizeCode = (value, length) => {
-  return String(value ?? "").padStart(length, "0");
-};
+const normalizeCode = (value, length) =>
+  String(value ?? "").padStart(length, "0");
 
 const isSidoItem = ({ sggCd, umdCd, riCd }) => {
   return sggCd === "000" && umdCd === "000" && riCd === "00";
@@ -35,6 +14,7 @@ const isSigunguItem = ({ sggCd, umdCd, riCd }) => {
   return sggCd !== "000" && umdCd === "000" && riCd === "00";
 };
 
+// 법정동 API 응답의 단건 데이터를 우리 region 테이블 구조로 변환하는 함수
 const mapApiItemToRegion = (item) => {
   const sidoCd = normalizeCode(item.sido_cd, 2);
   const sggCd = normalizeCode(item.sgg_cd, 3);
@@ -48,19 +28,10 @@ const mapApiItemToRegion = (item) => {
     return null;
   }
 
-  if (isTopLevelRegionName(lowestName)) {
+  if (isTopLevelRegionName(lowestName) || isSidoItem({ sggCd, umdCd, riCd })) {
     return {
       regionCode: sidoCd,
-      name: lowestName,
-      level: 1,
-      parentCode: null,
-    };
-  }
-
-  if (isSidoItem({ sggCd, umdCd, riCd })) {
-    return {
-      regionCode: sidoCd,
-      name: fullName,
+      name: isTopLevelRegionName(lowestName) ? lowestName : fullName,
       level: 1,
       parentCode: null,
     };
@@ -78,6 +49,7 @@ const mapApiItemToRegion = (item) => {
   return null;
 };
 
+// 여러 형태의 법정동 API 응답 구조에서 row 목록만 공통으로 추출하는 함수
 const extractItemsFromResponse = (data) => {
   if (!data) {
     return [];
@@ -156,16 +128,20 @@ const extractMetaFromResponse = (data) => {
   };
 };
 
-const fetchLegalRegionPage = async ({ pageNo, numOfRows }) => {
-  const params = {
-    serviceKey: SERVICE_KEY,
-    pageNo,
-    numOfRows,
-    type: "json",
-  };
-
-  const { data } = await axios.get(API_URL, {
-    params,
+// 법정동 API를 페이지 단위로 호출하는 함수
+const fetchLegalRegionPage = async ({
+  pageNo,
+  numOfRows,
+  apiUrl,
+  serviceKey,
+}) => {
+  const { data } = await axios.get(apiUrl, {
+    params: {
+      serviceKey,
+      pageNo,
+      numOfRows,
+      type: "json",
+    },
   });
 
   return data;
@@ -174,19 +150,35 @@ const fetchLegalRegionPage = async ({ pageNo, numOfRows }) => {
 const deduplicateRegions = (regions) => {
   const uniqueMap = new Map();
 
-  regions.forEach((region) => {
+  for (const region of regions) {
     if (!region?.regionCode) {
-      return;
+      continue;
     }
 
     uniqueMap.set(region.regionCode, region);
-  });
+  }
 
   return [...uniqueMap.values()];
 };
 
+const createSyncResult = ({
+  totalCount,
+  processedCount,
+  successCount,
+  failedCount,
+}) => {
+  return {
+    totalCount,
+    processedCount,
+    successCount,
+    failedCount,
+    message: "법정동 지역 동기화 완료",
+  };
+};
+
+// 법정동 전체 데이터를 조회해 region 테이블에 저장하는 메인 동기화 함수
 export const syncLegalRegions = async () => {
-  validateLegalRegionConfig();
+  const { apiUrl, serviceKey } = legalRegionConfigValidator();
 
   const numOfRows = 1000;
   let pageNo = 1;
@@ -197,6 +189,8 @@ export const syncLegalRegions = async () => {
     const data = await fetchLegalRegionPage({
       pageNo,
       numOfRows,
+      apiUrl,
+      serviceKey,
     });
 
     const meta = extractMetaFromResponse(data);
@@ -208,15 +202,11 @@ export const syncLegalRegions = async () => {
 
     rawItems = [...rawItems, ...items];
 
-    if (items.length === 0) {
-      break;
-    }
-
-    if (totalCount > 0 && rawItems.length >= totalCount) {
-      break;
-    }
-
-    if (items.length < numOfRows) {
+    if (
+      items.length === 0 ||
+      (totalCount > 0 && rawItems.length >= totalCount) ||
+      items.length < numOfRows
+    ) {
       break;
     }
 
@@ -242,13 +232,12 @@ export const syncLegalRegions = async () => {
     }
   }
 
-  const result = {
+  const result = createSyncResult({
     totalCount,
     processedCount: sortedRegions.length,
     successCount,
     failedCount,
-    message: "법정동 지역 동기화 완료",
-  };
+  });
 
   console.log(
     `[legal region sync] 원본 ${result.totalCount}건 중 처리 ${result.processedCount}건, 성공 ${result.successCount}건, 실패 ${result.failedCount}건`,
