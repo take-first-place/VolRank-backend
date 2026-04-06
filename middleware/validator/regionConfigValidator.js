@@ -27,3 +27,25 @@ export const externalRegionConfigValidator = () => {
     regionListPath,
   };
 };
+
+export const legalRegionConfigValidator = () => {
+  const apiUrl = process.env.LEGAL_REGION_API_URL;
+  const serviceKey = process.env.LEGAL_REGION_API_KEY;
+
+  if (!apiUrl) {
+    throw createConfigError(
+      "LEGAL_REGION_API_URL 환경변수가 설정되지 않았습니다.",
+    );
+  }
+
+  if (!serviceKey) {
+    throw createConfigError(
+      "LEGAL_REGION_API_KEY 환경변수가 설정되지 않았습니다.",
+    );
+  }
+
+  return {
+    apiUrl,
+    serviceKey,
+  };
+};
