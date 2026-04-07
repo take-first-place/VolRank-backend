@@ -89,3 +89,12 @@ export const upsertRegion = async ({ regionCode, name, level, parentCode }) => {
 
   await pool.query(sql, [regionCode, name, level, parentCode]);
 };
+
+export const findAllRegions = async () => {
+  const sql = `
+    SELECT region_code, name, level, parent_code
+    FROM region
+  `;
+  const [rows] = await pool.query(sql);
+  return rows;
+};

@@ -1,10 +1,10 @@
 import axios from "axios";
+import { findAllRegions } from "../../model/region/regionModel.js";
 import {
-  findSidoByName,
-  findChildRegionByNameAndParentCode,
-} from "../../model/region/regionModel.js";
+  buildRegionCache,
+  resolveRegionFromLocationText,
+} from "./regionService.js";
 import { saveExternalRegionMapping } from "../../model/region/externalRegionMappingModel.js";
-import { buildChildRegionCandidates } from "../../utils/regionLocationParser.js";
 import { isSameMeaningLowerRegionName } from "../../utils/regionNameRules.js";
 import { externalRegionConfigValidator } from "../../middleware/validator/regionConfigValidator.js";
 
@@ -42,26 +42,16 @@ const extractExternalRegionItem = (item) => {
   };
 };
 
-// 특정 시도 아래에서 시군구 후보명을 순회하며 일치하는 지역을 찾는 함수
-const findMatchedRegionUnderSido = async ({ sigunguName, sidoCode }) => {
-  const candidates = buildChildRegionCandidates(sigunguName);
-
-  for (const candidate of candidates) {
-    const region = await findChildRegionByNameAndParentCode({
-      name: candidate,
-      parentCode: sidoCode,
-    });
-
-    if (region) {
-      return region;
-    }
-  }
-
-  return null;
+const buildExternalLocationText = ({ sidoName, sigunguName }) => {
+  return [sidoName, sigunguName].filter(Boolean).join(" ").trim();
 };
 
 // 외부 API의 시도/시군구명을 기준으로 내부 region 테이블의 지역 정보를 찾는 함수
-const resolveRegionFromExternalLocation = async ({ sidoName, sigunguName }) => {
+const resolveRegionFromExternalLocation = ({
+  sidoName,
+  sigunguName,
+  regionCache,
+}) => {
   const normalizedSidoName = normalizeText(sidoName);
   const normalizedSigunguName = normalizeText(sigunguName);
 
@@ -69,9 +59,15 @@ const resolveRegionFromExternalLocation = async ({ sidoName, sigunguName }) => {
     return null;
   }
 
-  const sido = await findSidoByName(normalizedSidoName);
+  const sourceText = buildExternalLocationText({
+    sidoName: normalizedSidoName,
+    sigunguName: normalizedSigunguName,
+  });
 
-  if (!sido) {
+  const resolved = resolveRegionFromLocationText(sourceText, regionCache);
+  const region = resolved?.region || null;
+
+  if (!region) {
     console.log(`[1365 sync] 시도 매핑 실패: ${normalizedSidoName}`);
     return null;
   }
@@ -83,22 +79,21 @@ const resolveRegionFromExternalLocation = async ({ sidoName, sigunguName }) => {
       lowerRegionName: normalizedSigunguName,
     })
   ) {
-    return sido;
+    return region;
   }
 
-  const matchedRegion = await findMatchedRegionUnderSido({
-    sigunguName: normalizedSigunguName,
-    sidoCode: sido.region_code,
-  });
+  if (String(region.region_code) === String(resolved?.regionCode || "")) {
+    const isTopLevel = Number(region.level) === 1;
 
-  if (!matchedRegion) {
-    console.log(
-      `[1365 sync] 시군구 매핑 실패: ${normalizedSidoName} ${normalizedSigunguName}`,
-    );
-    return null;
+    if (isTopLevel) {
+      console.log(
+        `[1365 sync] 시군구 매핑 실패: ${normalizedSidoName} ${normalizedSigunguName}`,
+      );
+      return null;
+    }
   }
 
-  return matchedRegion;
+  return region;
 };
 
 // 1365 지역코드 조회 API를 페이지 단위로 호출하는 함수
@@ -132,7 +127,7 @@ const fetch1365RegionPage = async ({
 };
 
 // 외부 지역 item 1건을 내부 region과 매핑해 저장하는 함수
-const syncOneRegionItem = async (item) => {
+const syncOneRegionItem = async ({ item, regionCache }) => {
   const { sidoName, sigunguName, externalRegionCode } =
     extractExternalRegionItem(item);
 
@@ -141,9 +136,10 @@ const syncOneRegionItem = async (item) => {
     return SYNC_STATUS.FAILED;
   }
 
-  const region = await resolveRegionFromExternalLocation({
+  const region = resolveRegionFromExternalLocation({
     sidoName,
     sigunguName,
+    regionCache,
   });
 
   if (!region) {
@@ -184,6 +180,8 @@ const updateSyncCounts = ({ result, status }) => {
 
 // 1365 지역코드 전체 데이터를 조회하여 내부 region과 매핑 저장하는 메인 동기화 함수
 export const sync1365RegionMappings = async () => {
+  console.log("[1365 region sync] 동기화 시작");
+  console.time("소요 시간");
   const { baseUrl, serviceKey, regionListPath } =
     externalRegionConfigValidator();
 
@@ -191,6 +189,9 @@ export const sync1365RegionMappings = async () => {
     baseUrl,
     regionListPath,
   });
+
+  const allRegions = await findAllRegions();
+  const regionCache = buildRegionCache(allRegions);
 
   const numOfRows = 100;
   let pageNo = 1;
@@ -212,7 +213,7 @@ export const sync1365RegionMappings = async () => {
     }
 
     for (const item of items) {
-      const status = await syncOneRegionItem(item);
+      const status = await syncOneRegionItem({ item, regionCache });
       updateSyncCounts({ result, status });
     }
 
@@ -226,6 +227,7 @@ export const sync1365RegionMappings = async () => {
   console.log(
     `[1365 region sync] 원본 ${result.totalCount}건 중 처리 ${result.processedCount}건, 성공 ${result.successCount}건, 실패 ${result.failedCount}건`,
   );
+  console.timeEnd("소요 시간");
 
   return result;
 };

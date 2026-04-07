@@ -89,11 +89,17 @@ const extractItemsFromResponse = (data) => {
 const extractMetaFromResponse = (data) => {
   if (Array.isArray(data)) {
     const headSection = data.find((item) => Array.isArray(item?.head));
-    const resultInfo = headSection?.head?.[1]?.RESULT || {};
-    const listInfo = headSection?.head?.[0]?.list_total_count || 0;
+    const headArray = headSection?.head || [];
+    const countInfo =
+      headArray.find(
+        (h) => h.list_total_count !== undefined || h.totalCount !== undefined,
+      ) || {};
+    const resultInfo = headArray.find((h) => h.RESULT)?.RESULT || {};
 
     return {
-      totalCount: Number(listInfo || 0),
+      totalCount: Number(
+        countInfo.totalCount || countInfo.list_total_count || 0,
+      ),
       pageNo: 1,
       numOfRows: 0,
       resultCode: resultInfo.CODE || null,
@@ -105,11 +111,18 @@ const extractMetaFromResponse = (data) => {
     const headSection = data.StanReginCd.find((item) =>
       Array.isArray(item?.head),
     );
-    const resultInfo = headSection?.head?.[1]?.RESULT || {};
-    const listInfo = headSection?.head?.[0]?.list_total_count || 0;
+    const headArray = headSection?.head || [];
+
+    const countInfo =
+      headArray.find(
+        (h) => h.list_total_count !== undefined || h.totalCount !== undefined,
+      ) || {};
+    const resultInfo = headArray.find((h) => h.RESULT)?.RESULT || {};
 
     return {
-      totalCount: Number(listInfo || 0),
+      totalCount: Number(
+        countInfo.totalCount || countInfo.list_total_count || 0,
+      ),
       pageNo: 1,
       numOfRows: 0,
       resultCode: resultInfo.CODE || null,
@@ -117,14 +130,14 @@ const extractMetaFromResponse = (data) => {
     };
   }
 
-  const body = data?.response?.body || data || {};
+  const root = data?.response?.body || data || {};
 
   return {
-    totalCount: Number(body.totalCount || 0),
-    pageNo: Number(body.pageNo || 1),
-    numOfRows: Number(body.numOfRows || 0),
-    resultCode: body.resultCode || data?.resultCode || null,
-    resultMsg: body.resultMsg || data?.resultMsg || null,
+    totalCount: Number(root.totalCount || root.list_total_count || 0),
+    pageNo: Number(root.pageNo || 1),
+    numOfRows: Number(root.numOfRows || 0),
+    resultCode: root.resultCode || data?.resultCode || null,
+    resultMsg: root.resultMsg || data?.resultMsg || null,
   };
 };
 
@@ -178,39 +191,53 @@ const createSyncResult = ({
 
 // 법정동 전체 데이터를 조회해 region 테이블에 저장하는 메인 동기화 함수
 export const syncLegalRegions = async () => {
+  console.log("[legal region sync] 동기화 시작");
+  console.time("소요 시간");
   const { apiUrl, serviceKey } = legalRegionConfigValidator();
 
   const numOfRows = 1000;
-  let pageNo = 1;
-  let totalCount = 0;
-  let rawItems = [];
+  const firstPageData = await fetchLegalRegionPage({
+    pageNo: 1,
+    numOfRows,
+    apiUrl,
+    serviceKey,
+  });
 
-  while (true) {
-    const data = await fetchLegalRegionPage({
-      pageNo,
-      numOfRows,
-      apiUrl,
-      serviceKey,
-    });
+  const firstMeta = extractMetaFromResponse(firstPageData);
+  const firstItems = extractItemsFromResponse(firstPageData);
 
-    const meta = extractMetaFromResponse(data);
-    const items = extractItemsFromResponse(data);
+  const totalCount = firstMeta.totalCount;
+  let rawItems = [...firstItems];
 
-    if (pageNo === 1) {
-      totalCount = meta.totalCount;
+  const totalPages = totalCount > 0 ? Math.ceil(totalCount / numOfRows) : 1;
+
+  const chunkSize = 3;
+
+  if (totalPages >= 2) {
+    const pageNumbers = Array.from(
+      { length: totalPages - 1 },
+      (_, index) => index + 2,
+    );
+
+    for (let i = 0; i < pageNumbers.length; i += chunkSize) {
+      const pageChunk = pageNumbers.slice(i, i + chunkSize);
+
+      const pageResults = await Promise.all(
+        pageChunk.map((pageNo) =>
+          fetchLegalRegionPage({
+            pageNo,
+            numOfRows,
+            apiUrl,
+            serviceKey,
+          }),
+        ),
+      );
+
+      for (const data of pageResults) {
+        const items = extractItemsFromResponse(data);
+        rawItems.push(...items);
+      }
     }
-
-    rawItems = [...rawItems, ...items];
-
-    if (
-      items.length === 0 ||
-      (totalCount > 0 && rawItems.length >= totalCount) ||
-      items.length < numOfRows
-    ) {
-      break;
-    }
-
-    pageNo += 1;
   }
 
   const mappedRegions = rawItems.map(mapApiItemToRegion).filter(Boolean);
@@ -242,6 +269,7 @@ export const syncLegalRegions = async () => {
   console.log(
     `[legal region sync] 원본 ${result.totalCount}건 중 처리 ${result.processedCount}건, 성공 ${result.successCount}건, 실패 ${result.failedCount}건`,
   );
+  console.timeEnd("소요 시간");
 
   return result;
 };
