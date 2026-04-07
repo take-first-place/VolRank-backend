@@ -67,8 +67,7 @@ export const findVolunteers = async (query) => {
       v.start_date,
       v.end_date,
       v.recruit_count,
-      v.act_begin_time,
-      v.act_end_time,
+      v.volunteer_hour,
       v.status,
       r.name AS region_name,
       r.level,
@@ -145,8 +144,7 @@ export const findVolunteers = async (query) => {
     start_date: row.start_date,
     end_date: row.end_date,
     recruit_count: row.recruit_count,
-    act_begin_time: row.act_begin_time,
-    act_end_time: row.act_end_time,
+    volunteer_hour: row.volunteer_hour,
     status: row.status,
   }));
 

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { insertVolunteer } from "../../model/publicAPI/publicAPIModel.js";
-import { parseDate, parseHour } from "../../utils/dateUtils.js";
+import { parseDate } from "../../utils/publicAPIUtil.js";
 import { findRegionCodeBy1365Code } from "../../model/region/externalRegionMappingModel.js";
 
 const BASE_URL = process.env.V1365_API_BASE_URL;
@@ -59,13 +59,12 @@ export const fetchAndSaveVolunteers = async () => {
           place: d.actPlace || "",
           recruit_start_at: parseDate(d.noticeBgnde),
           recruit_end_at: parseDate(d.noticeEndde),
-          start_date: parseDate(d.progrmBgnde),
-          end_date: parseDate(d.progrmEndde),
-          act_begin_time: parseHour(d.actBeginTm),
-          act_end_time: parseHour(d.actEndTm),
-          recruit_count: d.rcritNmpr || 0,
-          status: statusMap[d.progrmSttusSe] || "FINISHED",
-          external_url: d.url || "",
+          start_date: parseDate(d.progrmBgnde, d.actBeginTm),
+          end_date: parseDate(d.progrmEndde, d.actEndTm),
+          recruit_count: d.rcruitNmpr || 0,
+          volunteer_hour: d.actEndTm - d.actBeginTm || 0,
+          status: statusMap[d.progrmStatusSe] || "FINISHED",
+          external_url: d.url,
           external_id: String(d.progrmRegistNo),
         };
 
