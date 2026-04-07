@@ -1,8 +1,4 @@
 import {
-  findSidoByName,
-  findChildRegionByNameAndParentCode,
-} from "../../model/region/regionModel.js";
-import {
   normalizeLocationText,
   normalizeSidoName,
   splitLocationTokens,
@@ -17,12 +13,9 @@ const buildResolveResult = ({ region = null, sourceText = "" }) => {
   };
 };
 
-const findMatchedChildRegion = async ({ candidates, parentCode }) => {
+const findMatchedChildRegion = ({ candidates, parentCode, sigunguMap }) => {
   for (const candidate of candidates) {
-    const matchedRegion = await findChildRegionByNameAndParentCode({
-      name: candidate,
-      parentCode,
-    });
+    const matchedRegion = sigunguMap.get(`${parentCode}:${candidate}`);
 
     if (matchedRegion) {
       return matchedRegion;
@@ -32,7 +25,8 @@ const findMatchedChildRegion = async ({ candidates, parentCode }) => {
   return null;
 };
 
-export const resolveRegionFromLocationText = async (locationText) => {
+export const resolveRegionFromLocationText = (locationText, regionCache) => {
+  const { sidoMap, sigunguMap } = regionCache;
   const sourceText = normalizeLocationText(locationText);
   const tokens = splitLocationTokens(locationText);
 
@@ -45,7 +39,7 @@ export const resolveRegionFromLocationText = async (locationText) => {
   const thirdToken = tokens[2] || null;
 
   // 1) 첫 토큰은 시/도
-  const sido = await findSidoByName(firstToken);
+  const sido = sidoMap.get(firstToken);
 
   if (!sido) {
     return buildResolveResult({ region: null, sourceText });
@@ -59,9 +53,10 @@ export const resolveRegionFromLocationText = async (locationText) => {
   // 3) 둘째 토큰은 시/도의 직속 자식
   const secondCandidates = buildChildRegionCandidates(secondToken);
 
-  const childRegion = await findMatchedChildRegion({
+  const childRegion = findMatchedChildRegion({
     candidates: secondCandidates,
     parentCode: sido.region_code,
+    sigunguMap,
   });
 
   if (!childRegion) {
@@ -76,13 +71,31 @@ export const resolveRegionFromLocationText = async (locationText) => {
   // 5) 셋째 토큰은 둘째 토큰의 직속 자식
   const thirdCandidates = buildChildRegionCandidates(thirdToken);
 
-  const grandChildRegion = await findMatchedChildRegion({
+  const grandChildRegion = findMatchedChildRegion({
     candidates: thirdCandidates,
     parentCode: childRegion.region_code,
+    sigunguMap,
   });
 
   return buildResolveResult({
     region: grandChildRegion || childRegion,
     sourceText,
   });
+};
+
+export const buildRegionCache = (regions) => {
+  const sidoMap = new Map();
+  const sigunguMap = new Map();
+
+  for (const region of regions) {
+    if (Number(region.level) === 1) {
+      sidoMap.set(region.name, region);
+    }
+
+    if (Number(region.level) === 2) {
+      sigunguMap.set(`${region.parent_code}:${region.name}`, region);
+    }
+  }
+
+  return { sidoMap, sigunguMap };
 };
