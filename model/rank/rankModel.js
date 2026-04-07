@@ -15,6 +15,7 @@ export const getNationalTop100 = async () => {
     LEFT JOIN volunteer_participation vp
       ON vp.user_id = u.id
       AND vp.participation_status = 'APPROVED'
+    WHERE u.role = 'USER'
     GROUP BY u.id, u.nickname, u.region_code
     ORDER BY rank_position ASC
     LIMIT 100
@@ -34,21 +35,25 @@ export const getRegionalTop100 = async (regionCode) => {
       u.region_code,
       COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
       RANK() OVER (
-        PARTITION BY u.region_code
         ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
       ) AS rank_position
     FROM users u
     LEFT JOIN volunteer_participation vp
       ON vp.user_id = u.id
       AND vp.participation_status = 'APPROVED'
-    WHERE u.region_code = ?
+    JOIN region r
+      ON r.region_code = u.region_code
+    WHERE u.role = 'USER'
+      AND (
+        u.region_code = ?          -- 시군구 코드로 직접 매칭
+        OR r.parent_code = ?       -- 시도 코드로 하위 시군구 전체 포함
+      )
     GROUP BY u.id, u.nickname, u.region_code
     ORDER BY rank_position ASC
     LIMIT 100
   `;
 
-  const [rows] = await conn.execute(sql, [regionCode]);
-  
+  const [rows] = await conn.execute(sql, [regionCode, regionCode]);
   return rows;
 };
 
@@ -90,20 +95,24 @@ export const getMyRegionalRank = async (userId, regionCode) => {
         u.region_code,
         COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
         RANK() OVER (
-          PARTITION BY u.region_code
           ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
         ) AS rank_position
       FROM users u
       LEFT JOIN volunteer_participation vp
         ON vp.user_id = u.id
         AND vp.participation_status = 'APPROVED'
-      WHERE u.region_code = ?
+      JOIN region r
+        ON r.region_code = u.region_code
+      WHERE u.role = 'USER'
+        AND (
+          u.region_code = ?        -- 시군구 직접 매칭
+          OR r.parent_code = ?     -- 시도 하위 전체 포함
+        )
       GROUP BY u.id, u.nickname, u.region_code
     ) ranked
     WHERE user_id = ?
   `;
 
-  const [rows] = await conn.execute(sql, [regionCode, userId]);
-  
+  const [rows] = await conn.execute(sql, [regionCode, regionCode, userId]);
   return rows[0] ?? null;
 };
