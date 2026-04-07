@@ -65,7 +65,7 @@ export const fetchAndSaveVolunteers = async () => {
           act_end_time: parseHour(d.actEndTm),
           recruit_count: d.rcritNmpr || 0,
           status: statusMap[d.progrmSttusSe] || "FINISHED",
-          external_url: d.url || "",
+          external_url: item.url || "",
           external_id: String(d.progrmRegistNo),
         };
 
