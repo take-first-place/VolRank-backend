@@ -1,6 +1,7 @@
 import axios from "axios";
 import { insertVolunteer } from "../../model/publicAPI/publicAPIModel.js";
 import { parseDate } from "../../utils/publicAPIUtil.js";
+import { findRegionCodeBy1365Code } from "../../model/region/externalRegionMappingModel.js";
 
 const BASE_URL = process.env.V1365_API_BASE_URL;
 const LIST_PATH = process.env.VOLUNTEER_LIST_PATH;
@@ -42,12 +43,19 @@ export const fetchAndSaveVolunteers = async () => {
           3: "FINISHED", // 모집 완료
         };
 
+        const externalRegionCode = String(d.gugunCd || d.sidoCd || "").trim();
+
+        const regionCode = externalRegionCode
+          ? await findRegionCodeBy1365Code(externalRegionCode)
+          : null;
+
         // 데이터 객체 생성
         const volunteer = {
           title: d.progrmSj || "",
           description: d.progrmCn || "",
           volunteer_type: d.srvcClCode || "",
           organization_name: d.mnnstNm || "",
+          region_code: regionCode,
           place: d.actPlace || "",
           recruit_start_at: parseDate(d.noticeBgnde),
           recruit_end_at: parseDate(d.noticeEndde),

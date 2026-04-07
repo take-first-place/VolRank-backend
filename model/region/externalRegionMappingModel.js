@@ -50,3 +50,15 @@ export const findActiveExternalRegionMappingByCode = async (
   const [rows] = await pool.query(sql, [externalRegionCode]);
   return rows[0] || null;
 };
+
+export const findRegionCodeBy1365Code = async (externalCode) => {
+  const query = `
+    SELECT region_code
+    FROM volunteer_region_mapping
+    WHERE external_region_code = ?
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.query(query, [externalCode]);
+  return rows[0]?.region_code || null;
+};
