@@ -8,6 +8,7 @@ export const insertVolunteer = async (v) => {
         description,
         volunteer_type,
         organization_name,
+        region_code,
         place,
         recruit_start_at,
         recruit_end_at,
@@ -15,15 +16,17 @@ export const insertVolunteer = async (v) => {
         end_date,
         recruit_count,
         volunteer_hour,
-        status, external_url,
+        status,
+        external_url,
         external_id
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
         title = VALUES(title),
         description = VALUES(description),
         volunteer_type = VALUES(volunteer_type),
         organization_name = VALUES(organization_name),
+        region_code = VALUES(region_code),
         place = VALUES(place),
         recruit_start_at = VALUES(recruit_start_at),
         recruit_end_at = VALUES(recruit_end_at),
@@ -40,6 +43,7 @@ export const insertVolunteer = async (v) => {
     v.description,
     v.volunteer_type,
     v.organization_name,
+    v.region_code,
     v.place,
     v.recruit_start_at,
     v.recruit_end_at,
