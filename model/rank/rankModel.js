@@ -7,6 +7,7 @@ export const getNationalTop100 = async () => {
       u.id AS user_id,
       u.nickname,
       u.region_code,
+      r.name AS region_name,
       COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
       RANK() OVER (
         ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -15,8 +16,10 @@ export const getNationalTop100 = async () => {
     LEFT JOIN volunteer_participation vp
       ON vp.user_id = u.id
       AND vp.participation_status = 'APPROVED'
+    LEFT JOIN region r
+      ON r.region_code = u.region_code
     WHERE u.role = 'USER'
-    GROUP BY u.id, u.nickname, u.region_code
+    GROUP BY u.id, u.nickname, u.region_code, r.name
     ORDER BY total_hours DESC, user_id ASC
     LIMIT 100
   `;
@@ -32,6 +35,7 @@ export const getSidoTop100 = async (sidoCode) => {
       u.id AS user_id,
       u.nickname,
       u.region_code,
+      r.name AS region_name,
       COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
       RANK() OVER (
         ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -44,7 +48,7 @@ export const getSidoTop100 = async (sidoCode) => {
       ON r.region_code = u.region_code
     WHERE u.role = 'USER'
       AND r.parent_code = ?
-    GROUP BY u.id, u.nickname, u.region_code
+    GROUP BY u.id, u.nickname, u.region_code, r.name
     ORDER BY total_hours DESC, user_id ASC
     LIMIT 100
   `;
@@ -60,6 +64,7 @@ export const getSigunguTop100 = async (sigunguCode) => {
       u.id AS user_id,
       u.nickname,
       u.region_code,
+      r.name AS region_name,
       COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
       RANK() OVER (
         ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -68,9 +73,11 @@ export const getSigunguTop100 = async (sigunguCode) => {
     LEFT JOIN volunteer_participation vp
       ON vp.user_id = u.id
       AND vp.participation_status = 'APPROVED'
+    LEFT JOIN region r
+      ON r.region_code = u.region_code
     WHERE u.role = 'USER'
       AND u.region_code = ?
-    GROUP BY u.id, u.nickname, u.region_code
+    GROUP BY u.id, u.nickname, u.region_code, r.name
     ORDER BY total_hours DESC, user_id ASC
     LIMIT 100
   `;
@@ -87,12 +94,14 @@ export const getMyNationalRank = async (userId) => {
       total_hours,
       user_id,
       nickname,
-      region_code
+      region_code,
+      region_name
     FROM (
       SELECT
         u.id AS user_id,
         u.nickname,
         u.region_code,
+        r.name AS region_name,
         COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
         RANK() OVER (
           ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -101,8 +110,10 @@ export const getMyNationalRank = async (userId) => {
       LEFT JOIN volunteer_participation vp
         ON vp.user_id = u.id
         AND vp.participation_status = 'APPROVED'
+      LEFT JOIN region r
+        ON r.region_code = u.region_code
       WHERE u.role = 'USER'
-      GROUP BY u.id, u.nickname, u.region_code
+      GROUP BY u.id, u.nickname, u.region_code, r.name
     ) ranked
     WHERE user_id = ?
   `;
@@ -119,12 +130,14 @@ export const getMySidoRank = async (userId, sidoCode) => {
       total_hours,
       user_id,
       nickname,
-      region_code
+      region_code,
+      region_name
     FROM (
       SELECT
         u.id AS user_id,
         u.nickname,
         u.region_code,
+        r.name AS region_name,
         COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
         RANK() OVER (
           ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -137,7 +150,7 @@ export const getMySidoRank = async (userId, sidoCode) => {
         ON r.region_code = u.region_code
       WHERE u.role = 'USER'
         AND r.parent_code = ?
-      GROUP BY u.id, u.nickname, u.region_code
+      GROUP BY u.id, u.nickname, u.region_code, r.name
     ) ranked
     WHERE user_id = ?
   `;
@@ -154,12 +167,14 @@ export const getMySigunguRank = async (userId, sigunguCode) => {
       total_hours,
       user_id,
       nickname,
-      region_code
+      region_code,
+      region_name
     FROM (
       SELECT
         u.id AS user_id,
         u.nickname,
         u.region_code,
+        r.name AS region_name,
         COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
         RANK() OVER (
           ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -168,9 +183,11 @@ export const getMySigunguRank = async (userId, sigunguCode) => {
       LEFT JOIN volunteer_participation vp
         ON vp.user_id = u.id
         AND vp.participation_status = 'APPROVED'
+      LEFT JOIN region r
+        ON r.region_code = u.region_code
       WHERE u.role = 'USER'
         AND u.region_code = ?
-      GROUP BY u.id, u.nickname, u.region_code
+      GROUP BY u.id, u.nickname, u.region_code, r.name
     ) ranked
     WHERE user_id = ?
   `;

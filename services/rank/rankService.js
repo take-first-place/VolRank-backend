@@ -11,8 +11,28 @@ import {
 const addIsMeFlag = (rows, userId) => {
   return rows.map((row) => ({
     ...row,
+    total_hours: Number(row.total_hours),
     is_me: userId ? row.user_id === userId : false,
   }));
+};
+
+const normalizeMyRank = (row, userId) => {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    ...row,
+    total_hours: Number(row.total_hours),
+    is_me: userId ? row.user_id === userId : false,
+  };
+};
+
+const buildTargetRegion = (region) => {
+  return {
+    regionCode: region.region_code,
+    regionName: region.name,
+  };
 };
 
 // 전국 랭킹 조회
@@ -21,20 +41,29 @@ export const getNationalRanking = async (userId) => {
   const top100WithFlag = addIsMeFlag(top100, userId);
 
   if (!userId) {
-    return { top100: top100WithFlag, myRank: null };
+    return {
+      targetRegion: null,
+      top100: top100WithFlag,
+      myRank: null,
+    };
   }
 
   const isInTop100 = top100WithFlag.some((row) => row.user_id === userId);
 
   if (isInTop100) {
-    return { top100: top100WithFlag, myRank: null };
+    return {
+      targetRegion: null,
+      top100: top100WithFlag,
+      myRank: null,
+    };
   }
 
   const myRank = await getMyNationalRank(userId);
 
   return {
+    targetRegion: null,
     top100: top100WithFlag,
-    myRank,
+    myRank: normalizeMyRank(myRank, userId),
   };
 };
 
@@ -47,6 +76,8 @@ export const getRegionalRanking = async (regionCode, userId) => {
     error.status = 404;
     throw error;
   }
+
+  const targetRegion = buildTargetRegion(region);
 
   let top100 = [];
   let myRank = null;
@@ -72,17 +103,26 @@ export const getRegionalRanking = async (regionCode, userId) => {
   const top100WithFlag = addIsMeFlag(top100, userId);
 
   if (!userId) {
-    return { top100: top100WithFlag, myRank: null };
+    return {
+      targetRegion,
+      top100: top100WithFlag,
+      myRank: null,
+    };
   }
 
   const isInTop100 = top100WithFlag.some((row) => row.user_id === userId);
 
   if (isInTop100) {
-    return { top100: top100WithFlag, myRank: null };
+    return {
+      targetRegion,
+      top100: top100WithFlag,
+      myRank: null,
+    };
   }
 
   return {
+    targetRegion,
     top100: top100WithFlag,
-    myRank,
+    myRank: normalizeMyRank(myRank, userId),
   };
 };
