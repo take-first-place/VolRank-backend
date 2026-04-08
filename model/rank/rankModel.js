@@ -7,7 +7,6 @@ export const getNationalTop100 = async () => {
       u.id AS user_id,
       u.nickname,
       u.region_code,
-      r.name AS region_name,
       COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
       RANK() OVER (
         ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -16,26 +15,25 @@ export const getNationalTop100 = async () => {
     LEFT JOIN volunteer_participation vp
       ON vp.user_id = u.id
       AND vp.participation_status = 'APPROVED'
-    LEFT JOIN region r
-      ON r.region_code = u.region_code
     WHERE u.role = 'USER'
-    GROUP BY u.id, u.nickname, u.region_code, r.name
-    ORDER BY total_hours DESC, user_id ASC
+    GROUP BY u.id, u.nickname, u.region_code
+    HAVING COALESCE(SUM(vp.approved_volunteer_hour), 0) > 0
+    ORDER BY rank_position ASC
     LIMIT 100
   `;
 
   const [rows] = await conn.execute(sql);
+
   return rows;
 };
 
-// 시도 기준 TOP 100 조회
-export const getSidoTop100 = async (sidoCode) => {
+// 지역별 TOP 100 조회
+export const getRegionalTop100 = async (regionCode) => {
   const sql = `
     SELECT
       u.id AS user_id,
       u.nickname,
       u.region_code,
-      r.name AS region_name,
       COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
       RANK() OVER (
         ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -47,61 +45,29 @@ export const getSidoTop100 = async (sidoCode) => {
     JOIN region r
       ON r.region_code = u.region_code
     WHERE u.role = 'USER'
-      AND r.parent_code = ?
-    GROUP BY u.id, u.nickname, u.region_code, r.name
-    ORDER BY total_hours DESC, user_id ASC
+      AND (
+        u.region_code = ?
+        OR r.parent_code = ?
+      )
+    GROUP BY u.id, u.nickname, u.region_code
+    HAVING COALESCE(SUM(vp.approved_volunteer_hour), 0) > 0
+    ORDER BY rank_position ASC
     LIMIT 100
   `;
 
-  const [rows] = await conn.execute(sql, [sidoCode]);
-  return rows;
-};
-
-// 시군구 기준 TOP 100 조회
-export const getSigunguTop100 = async (sigunguCode) => {
-  const sql = `
-    SELECT
-      u.id AS user_id,
-      u.nickname,
-      u.region_code,
-      r.name AS region_name,
-      COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
-      RANK() OVER (
-        ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
-      ) AS rank_position
-    FROM users u
-    LEFT JOIN volunteer_participation vp
-      ON vp.user_id = u.id
-      AND vp.participation_status = 'APPROVED'
-    LEFT JOIN region r
-      ON r.region_code = u.region_code
-    WHERE u.role = 'USER'
-      AND u.region_code = ?
-    GROUP BY u.id, u.nickname, u.region_code, r.name
-    ORDER BY total_hours DESC, user_id ASC
-    LIMIT 100
-  `;
-
-  const [rows] = await conn.execute(sql, [sigunguCode]);
+  const [rows] = await conn.execute(sql, [regionCode, regionCode]);
   return rows;
 };
 
 // 전국 기준 내 순위 조회
 export const getMyNationalRank = async (userId) => {
   const sql = `
-    SELECT
-      rank_position,
-      total_hours,
-      user_id,
-      nickname,
-      region_code,
-      region_name
+    SELECT rank_position, total_hours, user_id, nickname, region_code
     FROM (
       SELECT
         u.id AS user_id,
         u.nickname,
         u.region_code,
-        r.name AS region_name,
         COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
         RANK() OVER (
           ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -110,34 +76,27 @@ export const getMyNationalRank = async (userId) => {
       LEFT JOIN volunteer_participation vp
         ON vp.user_id = u.id
         AND vp.participation_status = 'APPROVED'
-      LEFT JOIN region r
-        ON r.region_code = u.region_code
       WHERE u.role = 'USER'
-      GROUP BY u.id, u.nickname, u.region_code, r.name
+      GROUP BY u.id, u.nickname, u.region_code
+      HAVING COALESCE(SUM(vp.approved_volunteer_hour), 0) > 0
     ) ranked
     WHERE user_id = ?
   `;
 
   const [rows] = await conn.execute(sql, [userId]);
+
   return rows[0] ?? null;
 };
 
-// 시도 기준 내 순위 조회
-export const getMySidoRank = async (userId, sidoCode) => {
+// 지역 기준 내 순위 조회
+export const getMyRegionalRank = async (userId, regionCode) => {
   const sql = `
-    SELECT
-      rank_position,
-      total_hours,
-      user_id,
-      nickname,
-      region_code,
-      region_name
+    SELECT rank_position, total_hours, user_id, nickname, region_code
     FROM (
       SELECT
         u.id AS user_id,
         u.nickname,
         u.region_code,
-        r.name AS region_name,
         COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
         RANK() OVER (
           ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
@@ -149,49 +108,16 @@ export const getMySidoRank = async (userId, sidoCode) => {
       JOIN region r
         ON r.region_code = u.region_code
       WHERE u.role = 'USER'
-        AND r.parent_code = ?
-      GROUP BY u.id, u.nickname, u.region_code, r.name
+        AND (
+          u.region_code = ?
+          OR r.parent_code = ?
+        )
+      GROUP BY u.id, u.nickname, u.region_code
+      HAVING COALESCE(SUM(vp.approved_volunteer_hour), 0) > 0
     ) ranked
     WHERE user_id = ?
   `;
 
-  const [rows] = await conn.execute(sql, [sidoCode, userId]);
-  return rows[0] ?? null;
-};
-
-// 시군구 기준 내 순위 조회
-export const getMySigunguRank = async (userId, sigunguCode) => {
-  const sql = `
-    SELECT
-      rank_position,
-      total_hours,
-      user_id,
-      nickname,
-      region_code,
-      region_name
-    FROM (
-      SELECT
-        u.id AS user_id,
-        u.nickname,
-        u.region_code,
-        r.name AS region_name,
-        COALESCE(SUM(vp.approved_volunteer_hour), 0) AS total_hours,
-        RANK() OVER (
-          ORDER BY COALESCE(SUM(vp.approved_volunteer_hour), 0) DESC
-        ) AS rank_position
-      FROM users u
-      LEFT JOIN volunteer_participation vp
-        ON vp.user_id = u.id
-        AND vp.participation_status = 'APPROVED'
-      LEFT JOIN region r
-        ON r.region_code = u.region_code
-      WHERE u.role = 'USER'
-        AND u.region_code = ?
-      GROUP BY u.id, u.nickname, u.region_code, r.name
-    ) ranked
-    WHERE user_id = ?
-  `;
-
-  const [rows] = await conn.execute(sql, [sigunguCode, userId]);
+  const [rows] = await conn.execute(sql, [regionCode, regionCode, userId]);
   return rows[0] ?? null;
 };
