@@ -17,7 +17,7 @@ export const getNationalTop100 = async () => {
       AND vp.participation_status = 'APPROVED'
     WHERE u.role = 'USER'
     GROUP BY u.id, u.nickname, u.region_code
-    ORDER BY rank_position ASC
+    ORDER BY total_hours DESC, user_id ASC
     LIMIT 100
   `;
 
@@ -45,11 +45,11 @@ export const getRegionalTop100 = async (regionCode) => {
       ON r.region_code = u.region_code
     WHERE u.role = 'USER'
       AND (
-        u.region_code = ?          -- 시군구 코드로 직접 매칭
-        OR r.parent_code = ?       -- 시도 코드로 하위 시군구 전체 포함
+        u.region_code = ?       -- 시군구 코드로 직접 매칭
+        OR r.parent_code = ?    -- 시도 코드로 하위 시군구 전체 포함
       )
     GROUP BY u.id, u.nickname, u.region_code
-    ORDER BY rank_position ASC
+    ORDER BY total_hours DESC, user_id ASC
     LIMIT 100
   `;
 
@@ -74,13 +74,14 @@ export const getMyNationalRank = async (userId) => {
       LEFT JOIN volunteer_participation vp
         ON vp.user_id = u.id
         AND vp.participation_status = 'APPROVED'
+      WHERE u.role = 'USER'
       GROUP BY u.id, u.nickname, u.region_code
     ) ranked
     WHERE user_id = ?
   `;
 
   const [rows] = await conn.execute(sql, [userId]);
-  
+
   return rows[0] ?? null;
 };
 
@@ -105,8 +106,8 @@ export const getMyRegionalRank = async (userId, regionCode) => {
         ON r.region_code = u.region_code
       WHERE u.role = 'USER'
         AND (
-          u.region_code = ?        -- 시군구 직접 매칭
-          OR r.parent_code = ?     -- 시도 하위 전체 포함
+          u.region_code = ?           -- 시군구 직접 매칭
+          OR r.parent_code = ?        -- 시도 하위 전체 포함
         )
       GROUP BY u.id, u.nickname, u.region_code
     ) ranked
