@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import cors from "cors";
 
 import userRoutes from "./routes/user/userRoutes.js";
 import volunteerRoutes from "./routes/volunteer/volunteerRoutes.js";
@@ -14,6 +15,13 @@ import errorHandler from "./middleware/errorHandler.js";
 import "./cron/volunteerCron.js";
 
 const app = express();
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 
 app.use(express.json());
 
