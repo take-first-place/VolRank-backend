@@ -12,7 +12,7 @@ export const findAllSidos = async () => {
     ORDER BY region_code ASC
   `;
 
-  const [rows] = await pool.query(sql);
+  const [rows] = await pool.execute(sql);
   return rows;
 };
 
@@ -28,7 +28,7 @@ export const findChildRegionsByParentCode = async (parentCode) => {
     ORDER BY region_code ASC
   `;
 
-  const [rows] = await pool.query(sql, [parentCode]);
+  const [rows] = await pool.execute(sql, [parentCode]);
   return rows;
 };
 
@@ -44,7 +44,7 @@ export const findRegionByNameAndLevel = async ({ name, level }) => {
     LIMIT 1
   `;
 
-  const [rows] = await pool.query(sql, [name, level]);
+  const [rows] = await pool.execute(sql, [name, level]);
   return rows[0] || null;
 };
 
@@ -64,7 +64,7 @@ export const findChildRegionByNameAndParentCode = async ({
     LIMIT 1
   `;
 
-  const [rows] = await pool.query(sql, [name, parentCode]);
+  const [rows] = await pool.execute(sql, [name, parentCode]);
   return rows[0] || null;
 };
 
@@ -87,7 +87,7 @@ export const upsertRegion = async ({ regionCode, name, level, parentCode }) => {
       parent_code = VALUES(parent_code)
   `;
 
-  await pool.query(sql, [regionCode, name, level, parentCode]);
+  await pool.execute(sql, [regionCode, name, level, parentCode]);
 };
 
 export const findAllRegions = async () => {
@@ -95,6 +95,22 @@ export const findAllRegions = async () => {
     SELECT region_code, name, level, parent_code
     FROM region
   `;
-  const [rows] = await pool.query(sql);
+  const [rows] = await pool.execute(sql);
   return rows;
+};
+
+export const findRegionByCode = async (regionCode) => {
+  const sql = `
+    SELECT
+      region_code,
+      name,
+      level,
+      parent_code
+    FROM region
+    WHERE region_code = ?
+    LIMIT 1
+  `;
+
+  const [rows] = await pool.execute(sql, [regionCode]);
+  return rows[0] ?? null;
 };
