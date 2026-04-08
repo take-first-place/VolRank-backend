@@ -2,6 +2,10 @@ import bcrypt from "bcrypt";
 import * as userModel from "../../model/user/userModel.js";
 import { isVerified, clearVerified } from "../../utils/codeStore.js";
 
+export const findById = async (id) => {
+  return await userModel.findById(id);
+};
+
 export const registerUser = async ({
   username,
   nickname,

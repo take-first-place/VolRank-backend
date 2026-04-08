@@ -1,7 +1,22 @@
-import { registerUser } from "../../services/user/userService.js";
+import { registerUser, findById } from "../../services/user/userService.js";
 import { success, fail } from "../../utils/response.js";
 import { saveCode, verifyCode } from "../../utils/codeStore.js";
 import { sendMail } from "../../utils/mailer.js";
+
+// ID 조회
+export const getUserId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await findById(id);
+    if (!user) {
+      return fail(res, "사용자를 찾을 수 없습니다.", 404);
+    }
+    return success(res, user, "사용자 조회 성공", 200);
+  } catch (err) {
+    console.error("사용자 조회 중 오류:", err);
+    return fail(res, err.message || "사용자 조회 실패", err.status || 500);
+  }
+};
 
 // 회원 가입
 // POST /api/users/register
