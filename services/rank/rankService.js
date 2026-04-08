@@ -1,58 +1,88 @@
+import { findRegionByCode } from "../../model/region/regionModel.js";
 import {
   getNationalTop100,
-  getRegionalTop100,
+  getSidoTop100,
+  getSigunguTop100,
   getMyNationalRank,
-  getMyRegionalRank,
+  getMySidoRank,
+  getMySigunguRank,
 } from "../../model/rank/rankModel.js";
+
+const addIsMeFlag = (rows, userId) => {
+  return rows.map((row) => ({
+    ...row,
+    is_me: userId ? row.user_id === userId : false,
+  }));
+};
 
 // 전국 랭킹 조회
 export const getNationalRanking = async (userId) => {
   const top100 = await getNationalTop100();
+  const top100WithFlag = addIsMeFlag(top100, userId);
 
-  const top100WithFlag = top100.map((row) => ({
-    ...row,
-    is_me: userId ? row.user_id === userId : false,
-  }));
-
-  // 비로그인
   if (!userId) {
     return { top100: top100WithFlag, myRank: null };
   }
 
   const isInTop100 = top100WithFlag.some((row) => row.user_id === userId);
 
-  // TOP100 안에 있으면
   if (isInTop100) {
     return { top100: top100WithFlag, myRank: null };
   }
 
-  // TOP100 밖이면 내 순위 따로 조회
   const myRank = await getMyNationalRank(userId);
-  return { top100: top100WithFlag, myRank };
+
+  return {
+    top100: top100WithFlag,
+    myRank,
+  };
 };
 
-// 지역별 랭킹 조회
+// 지역 랭킹 조회
 export const getRegionalRanking = async (regionCode, userId) => {
-  const top100 = await getRegionalTop100(regionCode);
+  const region = await findRegionByCode(regionCode);
 
-  const top100WithFlag = top100.map((row) => ({
-    ...row,
-    is_me: userId ? row.user_id === userId : false,
-  }));
+  if (!region) {
+    const error = new Error("존재하지 않는 지역입니다.");
+    error.status = 404;
+    throw error;
+  }
 
-  // 비로그인
+  let top100 = [];
+  let myRank = null;
+
+  if (region.level === 1) {
+    top100 = await getSidoTop100(regionCode);
+
+    if (userId) {
+      myRank = await getMySidoRank(userId, regionCode);
+    }
+  } else if (region.level === 2) {
+    top100 = await getSigunguTop100(regionCode);
+
+    if (userId) {
+      myRank = await getMySigunguRank(userId, regionCode);
+    }
+  } else {
+    const error = new Error("지원하지 않는 지역 레벨입니다.");
+    error.status = 400;
+    throw error;
+  }
+
+  const top100WithFlag = addIsMeFlag(top100, userId);
+
   if (!userId) {
     return { top100: top100WithFlag, myRank: null };
   }
 
   const isInTop100 = top100WithFlag.some((row) => row.user_id === userId);
 
-  // TOP100 안에 있으면
   if (isInTop100) {
     return { top100: top100WithFlag, myRank: null };
   }
 
-  // TOP100 밖이면 내 순위 따로 조회
-  const myRank = await getMyRegionalRank(userId, regionCode);
-  return { top100: top100WithFlag, myRank };
+  return {
+    top100: top100WithFlag,
+    myRank,
+  };
 };
