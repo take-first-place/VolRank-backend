@@ -3,8 +3,9 @@ import conn from "../../config/db.js";
 const formatRegionName = ({ level, region_name, parent_name }) => {
   if (!region_name) return null;
   if (Number(level) === 1) return region_name;
-  if (Number(level) === 2 && parent_name)
+  if (Number(level) === 2 && parent_name) {
     return `${parent_name} ${region_name}`;
+  }
   return region_name;
 };
 
@@ -72,19 +73,22 @@ export const findVolunteers = async (query) => {
       v.status,
       r.name AS region_name,
       r.level,
+      r.parent_code,
       p.name AS parent_name
     FROM volunteer v
     LEFT JOIN region r
       ON v.region_code = r.region_code
     LEFT JOIN region p
       ON r.parent_code = p.region_code
-    WHERE 1=1
+    WHERE 1 = 1
   `;
 
   let countSql = `
     SELECT COUNT(*) AS total
     FROM volunteer v
-    WHERE 1=1
+    LEFT JOIN region r
+      ON v.region_code = r.region_code
+    WHERE 1 = 1
   `;
 
   const params = [];
@@ -93,34 +97,45 @@ export const findVolunteers = async (query) => {
   if (query.keyword) {
     sql += " AND (v.title LIKE ? OR v.description LIKE ?)";
     countSql += " AND (v.title LIKE ? OR v.description LIKE ?)";
-
     const keyword = `%${query.keyword}%`;
     params.push(keyword, keyword);
     countParams.push(keyword, keyword);
   }
 
   if (query.region_code) {
-    sql += " AND v.region_code = ?";
-    countSql += " AND v.region_code = ?";
-
-    params.push(query.region_code);
-    countParams.push(query.region_code);
+    sql += `
+      AND (
+        v.region_code = ?
+        OR r.parent_code = ?
+      )
+    `;
+    countSql += `
+      AND (
+        v.region_code = ?
+        OR r.parent_code = ?
+      )
+    `;
+    params.push(query.region_code, query.region_code);
+    countParams.push(query.region_code, query.region_code);
   }
 
   if (query.volunteer_type) {
     sql += " AND v.volunteer_type = ?";
     countSql += " AND v.volunteer_type = ?";
-
     params.push(query.volunteer_type);
     countParams.push(query.volunteer_type);
   }
 
   if (query.status) {
-    sql += " AND v.status = ?";
-    countSql += " AND v.status = ?";
-
-    params.push(query.status);
-    countParams.push(query.status);
+    if (query.status === "ENDED") {
+      sql += " AND v.status IN ('CLOSED', 'FINISHED')";
+      countSql += " AND v.status IN ('CLOSED', 'FINISHED')";
+    } else {
+      sql += " AND v.status = ?";
+      countSql += " AND v.status = ?";
+      params.push(query.status);
+      countParams.push(query.status);
+    }
   }
 
   sql += " ORDER BY v.id DESC LIMIT ?, ?";

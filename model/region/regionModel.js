@@ -3,12 +3,14 @@ import pool from "../../config/db.js";
 export const findAllSidos = async () => {
   const sql = `
     SELECT 
-      region_code AS regionCode,
+      region_code,
       name,
       level,
-      parent_code AS parentCode
+      parent_code
     FROM region
     WHERE level = 1
+      AND name <> '기본'
+      AND name <> '00'
     ORDER BY region_code ASC
   `;
 
@@ -19,12 +21,14 @@ export const findAllSidos = async () => {
 export const findChildRegionsByParentCode = async (parentCode) => {
   const sql = `
     SELECT 
-      region_code AS regionCode,
+      region_code,
       name,
       level,
-      parent_code AS parentCode
+      parent_code
     FROM region
     WHERE parent_code = ?
+      AND name <> '기본'
+      AND name <> '00'
     ORDER BY region_code ASC
   `;
 
