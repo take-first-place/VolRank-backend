@@ -2,14 +2,14 @@ import conn from "../../config/db.js";
 
 // 사용자 조회
 export const findByEmail = async (email) => {
-  const sql = "SELECT * FROM user WHERE email = ?";
+  const sql = "SELECT * FROM users WHERE email = ?";
   const [rows] = await conn.execute(sql, [email]);
 
   return rows[0];
 };
 
 export const findById = async (id) => {
-  const sql = "SELECT * FROM user WHERE id = ?";
+  const sql = "SELECT * FROM users WHERE id = ?";
   const [rows] = await conn.execute(sql, [id]);
 
   return rows[0];
@@ -24,7 +24,7 @@ export const createUser = async ({
   region_code,
 }) => {
   const sql = `
-    INSERT INTO user (
+    INSERT INTO users (
       username,
       nickname, 
       email, 

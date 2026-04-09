@@ -5,8 +5,12 @@ import {
   register,
   sendCode,
   verifyingCode,
+  getUserId,
 } from "../../controllers/user/userController.js";
 import { registerValidator } from "../../middleware/validator/userValidator.js";
+
+// GET /api/users
+router.get("/:id", getUserId);
 
 // POST /api/users
 router.post("/send-code", sendCode); // 코드 발송
