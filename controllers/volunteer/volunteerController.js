@@ -1,4 +1,5 @@
-import { findVolunteers, createVolunteerPerformance } from "../../model/volunteer/volunteerModel.js";
+import { findVolunteers, createVolunteerPerformance, findVolunteerById } from "../../model/volunteer/volunteerModel.js";
+
 
 import { success, fail } from "../../utils/response.js";
 
@@ -56,5 +57,18 @@ export const getVolunteers = async (req, res) => {
   } catch (err) {
     console.error("조회 실패", err);
     return fail(res, err.message || "조회 실패", err.status || 500);
+  }
+};
+
+export const getVolunteerDetail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await findVolunteerById(id);
+
+    if (!result) return fail(res, "봉사활동을 찾을 수 없습니다.", 404);
+
+    return success(res, result, "상세 조회 성공", 200);
+  } catch (err) {
+    return fail(res, err.message || "상세 조회 실패", err.status || 500);
   }
 };

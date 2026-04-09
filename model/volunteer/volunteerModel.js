@@ -158,3 +158,20 @@ export const findVolunteers = async (query) => {
     data,
   };
 };
+
+export const findVolunteerById = async (id) => {
+  const sql = `
+  SELECT id, title, description, volunteer_type, organization_name, region_code, place, recruit_start_at, recruit_end_at, start_date, end_date, recruit_count, status, external_url
+    FROM volunteer
+    WHERE id = ?
+    `;
+
+  const [rows] = await conn.query(sql, [id]);
+
+  if (rows.length === 0) return null;
+
+  const row = rows[0];
+  return {
+    ...row,
+  };
+};
