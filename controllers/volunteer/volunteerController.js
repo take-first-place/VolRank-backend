@@ -1,24 +1,37 @@
 import {
-    findVolunteers
+  findVolunteers,
+  findVolunteerById,
 } from "../../model/volunteer/volunteerModel.js";
 
 import { success, fail } from "../../utils/response.js";
 
-
 export const getVolunteers = async (req, res) => {
-    try {
-        const page = Math.max(1, Number(req.query.page) || 1);
-        const size = Math.min(50, Number(req.query.size) || 5);
+  try {
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const size = Math.min(50, Number(req.query.size) || 5);
 
-        const result = await findVolunteers({
-            page,
-            size,
-            ...req.query
-        });
+    const result = await findVolunteers({
+      page,
+      size,
+      ...req.query,
+    });
 
-        return success(res, result, "조회 성공", 200);
-    } catch (err) {
-        console.error("조회 실패", err);
-        return fail(res, err.message || "조회 실패", err.status || 500);
-    }
+    return success(res, result, "조회 성공", 200);
+  } catch (err) {
+    console.error("조회 실패", err);
+    return fail(res, err.message || "조회 실패", err.status || 500);
+  }
+};
+
+export const getVolunteerDetail = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await findVolunteerById(id);
+
+    if (!result) return fail(res, "봉사활동을 찾을 수 없습니다.", 404);
+
+    return success(res, result, "상세 조회 성공", 200);
+  } catch (err) {
+    return fail(res, err.message || "상세 조회 실패", err.status || 500);
+  }
 };
