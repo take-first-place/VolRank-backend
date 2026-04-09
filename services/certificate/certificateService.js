@@ -1,5 +1,6 @@
 import {
   findParticipationById,
+  createVolunteerParticipation,
   findLastSubmissionNo,
   findLatestCertificateByParticipationId,
   findCertificateByParticipationIdAndFileHash,
@@ -14,15 +15,74 @@ import {
   resetParticipationAfterCertificateReject,
 } from "../../model/certificate/certificateModel.js";
 import { generateFileHash } from "../../utils/fileHash.js";
+import { findById } from "../../model/user/userModel.js";
 
-// 인증서 업로드
-export const uploadCertificate = async ({ participationId, userId, file }) => {
-  if (!file) {
-    const error = new Error("업로드할 인증서가 없습니다.");
+const validateNewParticipationPayload = (body) => {
+  const {
+    activityTitle,
+    organizationName,
+    place,
+    startDate,
+    endDate,
+    requestedVolunteerHour,
+  } = body;
+
+  if (
+    !activityTitle?.trim() ||
+    !organizationName?.trim() ||
+    !place?.trim() ||
+    !startDate ||
+    !endDate ||
+    !requestedVolunteerHour
+  ) {
+    const error = new Error(
+      "봉사활동 정보와 인증서 파일을 모두 입력해야 합니다.",
+    );
     error.status = 400;
     throw error;
   }
 
+  const parsedHour = Number(requestedVolunteerHour);
+
+  if (!Number.isFinite(parsedHour) || parsedHour <= 0) {
+    const error = new Error("요청 봉사시간은 0보다 큰 숫자여야 합니다.");
+    error.status = 400;
+    throw error;
+  }
+
+  return {
+    activityTitle: activityTitle.trim(),
+    organizationName: organizationName.trim(),
+    place: place.trim(),
+    startDate,
+    endDate,
+    requestedVolunteerHour: parsedHour,
+  };
+};
+
+const resolveUserRegionCode = async (user) => {
+  const regionCode = user?.region_code || user?.regionCode;
+
+  if (regionCode) {
+    return regionCode;
+  }
+
+  const dbUser = await findById(user.id);
+
+  if (!dbUser?.region_code) {
+    const error = new Error("사용자 지역 정보가 없습니다.");
+    error.status = 400;
+    throw error;
+  }
+
+  return dbUser.region_code;
+};
+
+const uploadToExistingParticipation = async ({
+  participationId,
+  userId,
+  file,
+}) => {
   const participation = await findParticipationById(participationId);
 
   if (!participation) {
@@ -97,22 +157,52 @@ export const uploadCertificate = async ({ participationId, userId, file }) => {
   };
 };
 
-// 내 인증서 목록 조회 서비스
+export const uploadCertificate = async ({ user, file, body }) => {
+  if (!file) {
+    const error = new Error("업로드할 인증서가 없습니다.");
+    error.status = 400;
+    throw error;
+  }
+
+  const participationId = Number(body?.volunteerParticipationId);
+
+  if (Number.isInteger(participationId) && participationId > 0) {
+    return await uploadToExistingParticipation({
+      participationId,
+      userId: user.id,
+      file,
+    });
+  }
+
+  const newParticipationPayload = validateNewParticipationPayload(body);
+  const regionCode = await resolveUserRegionCode(user);
+
+  const createdParticipationId = await createVolunteerParticipation({
+    userId: user.id,
+    regionCode,
+    ...newParticipationPayload,
+  });
+
+  return await uploadToExistingParticipation({
+    participationId: createdParticipationId,
+    userId: user.id,
+    file,
+  });
+};
+
+// 아래 나머지 함수들은 기존 그대로 유지
 export const getMyCertificates = async (userId) => {
   return await findCertificatesByUserId(userId);
 };
 
-// 관리자용 전체 인증서 목록 조회
 export const getAdminCertificates = async () => {
   return await findAdminCertificates();
 };
 
-// 관리자용 대기 중 인증서 목록 조회
 export const getPendingCertificates = async () => {
   return await findPendingCertificates();
 };
 
-// 참여 이력별 인증서 목록 조회 서비스
 export const getCertificatesByParticipation = async (
   participationId,
   userId,
@@ -140,7 +230,6 @@ export const getCertificatesByParticipation = async (
   return await findCertificatesByParticipationId(participationId);
 };
 
-// 관리자 인증서 검토 서비스 (승인/반려)
 export const reviewCertificate = async ({
   certificateId,
   reviewerId,

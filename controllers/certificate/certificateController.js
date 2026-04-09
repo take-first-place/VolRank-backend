@@ -11,14 +11,12 @@ import asyncHandler from "../../middleware/asyncHandler.js";
 
 // 인증서 업로드
 export const uploadCertificate = asyncHandler(async (req, res) => {
-  const participationId = Number(req.body.volunteerParticipationId);
-  const userId = req.user.id;
   const file = req.file;
 
   const data = await uploadCertificateService({
-    participationId,
-    userId,
+    user: req.user,
     file,
+    body: req.body,
   });
 
   return success(res, data, "인증서 업로드 성공", 201);

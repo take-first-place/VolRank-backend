@@ -18,6 +18,49 @@ export const findParticipationById = async (participationId) => {
   return rows[0];
 };
 
+// 새 참여 기록 생성
+export const createVolunteerParticipation = async ({
+  userId,
+  activityTitle,
+  organizationName,
+  regionCode,
+  place,
+  startDate,
+  endDate,
+  requestedVolunteerHour,
+}) => {
+  const sql = `
+    INSERT INTO volunteer_participation (
+      user_id,
+      activity_title,
+      organization_name,
+      region_code,
+      place,
+      start_date,
+      end_date,
+      requested_volunteer_hour,
+      approved_volunteer_hour,
+      participation_status,
+      created_at,
+      updated_at
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 'PENDING', NOW(), NOW())
+  `;
+
+  const [result] = await pool.query(sql, [
+    userId,
+    activityTitle,
+    organizationName,
+    regionCode,
+    place,
+    startDate,
+    endDate,
+    requestedVolunteerHour,
+  ]);
+
+  return result.insertId;
+};
+
 // 마지막 제출 번호 조회
 export const findLastSubmissionNo = async (participationId) => {
   const sql = `
