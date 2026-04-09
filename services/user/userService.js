@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import * as userModel from "../../model/user/userModel.js";
+import { getMyVolunteerSummary } from "../../model/user/userModel.js";
 import { isVerified, clearVerified } from "../../utils/codeStore.js";
 
 export const findById = async (id) => {
@@ -13,7 +14,6 @@ export const registerUser = async ({
   password,
   region_code,
 }) => {
-  // 이메일 인증 확인
   if (!isVerified(email)) {
     const error = new Error("이메일 인증이 필요합니다.");
     error.status = 403;
@@ -36,6 +36,30 @@ export const registerUser = async ({
     region_code,
   });
 
-  clearVerified(email); // ✅ 가입 완료 후 인증 정보 정리
+  clearVerified(email);
   return user;
+};
+
+export const getMyPageSummary = async (userId) => {
+  const user = await findById(userId);
+
+  if (!user) {
+    const error = new Error("사용자를 찾을 수 없습니다.");
+    error.status = 404;
+    throw error;
+  }
+
+  const summary = await getMyVolunteerSummary(userId);
+
+  return {
+    userId: user.id,
+    email: user.email,
+    nickname: user.nickname,
+    username: user.username,
+    regionCode: user.region_code,
+    totalVolunteerHour: Number(summary?.total_volunteer_hour || 0),
+    approvedParticipationCount: Number(
+      summary?.approved_participation_count || 0,
+    ),
+  };
 };
