@@ -156,6 +156,40 @@ export const findCertificatesByParticipationId = async (participationId) => {
   return rows;
 };
 
+// 관리자용 전체 인증서 목록 조회
+export const findAdminCertificates = async () => {
+  const sql = `
+    SELECT
+      cs.id,
+      cs.volunteer_participation_id,
+      cs.file_url,
+      cs.file_hash,
+      cs.status,
+      cs.submission_no,
+      cs.submitted_at,
+      cs.reviewed_at,
+      cs.rejected_reason,
+      vp.user_id,
+      vp.activity_title,
+      vp.organization_name,
+      vp.start_date,
+      vp.end_date,
+      vp.requested_volunteer_hour,
+      vp.approved_volunteer_hour,
+      u.nickname,
+      u.email
+    FROM certificate_submission cs
+    INNER JOIN volunteer_participation vp
+      ON cs.volunteer_participation_id = vp.id
+    INNER JOIN users u
+      ON vp.user_id = u.id
+    ORDER BY cs.submitted_at DESC, cs.submission_no DESC
+  `;
+
+  const [rows] = await pool.query(sql);
+  return rows;
+};
+
 // 관리자용 대기 중 인증서 목록 조회
 export const findPendingCertificates = async () => {
   const sql = `
@@ -230,5 +264,44 @@ export const reviewCertificate = async ({
     certificateId,
   ]);
 
+  return result;
+};
+
+export const updateParticipationAfterCertificateReview = async ({
+  participationId,
+  participationStatus,
+  approvedVolunteerHour,
+}) => {
+  const sql = `
+    UPDATE volunteer_participation
+    SET
+      participation_status = ?,
+      approved_volunteer_hour = ?,
+      updated_at = NOW()
+    WHERE id = ?
+  `;
+
+  const [result] = await pool.query(sql, [
+    participationStatus,
+    approvedVolunteerHour,
+    participationId,
+  ]);
+
+  return result;
+};
+
+export const resetParticipationAfterCertificateReject = async ({
+  participationId,
+}) => {
+  const sql = `
+    UPDATE volunteer_participation
+    SET
+      participation_status = 'REJECTED',
+      approved_volunteer_hour = 0,
+      updated_at = NOW()
+    WHERE id = ?
+  `;
+
+  const [result] = await pool.query(sql, [participationId]);
   return result;
 };

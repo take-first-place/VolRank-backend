@@ -7,8 +7,11 @@ import {
   findCertificatesByUserId,
   findCertificatesByParticipationId,
   findCertificateById,
+  findAdminCertificates,
   findPendingCertificates,
   reviewCertificate as reviewCertificateModel,
+  updateParticipationAfterCertificateReview,
+  resetParticipationAfterCertificateReject,
 } from "../../model/certificate/certificateModel.js";
 import { generateFileHash } from "../../utils/fileHash.js";
 
@@ -99,6 +102,11 @@ export const getMyCertificates = async (userId) => {
   return await findCertificatesByUserId(userId);
 };
 
+// 관리자용 전체 인증서 목록 조회
+export const getAdminCertificates = async () => {
+  return await findAdminCertificates();
+};
+
 // 관리자용 대기 중 인증서 목록 조회
 export const getPendingCertificates = async () => {
   return await findPendingCertificates();
@@ -109,6 +117,12 @@ export const getCertificatesByParticipation = async (
   participationId,
   userId,
 ) => {
+  if (!Number.isInteger(participationId)) {
+    const error = new Error("유효하지 않은 참여 이력 ID입니다.");
+    error.status = 400;
+    throw error;
+  }
+
   const participation = await findParticipationById(participationId);
 
   if (!participation) {
@@ -159,12 +173,36 @@ export const reviewCertificate = async ({
     throw error;
   }
 
+  const participation = await findParticipationById(
+    certificate.volunteer_participation_id,
+  );
+
+  if (!participation) {
+    const error = new Error("참여 이력을 찾을 수 없습니다.");
+    error.status = 404;
+    throw error;
+  }
+
   await reviewCertificateModel({
     certificateId,
     status,
     reviewerId,
     rejectedReason: status === "REJECTED" ? rejectedReason.trim() : null,
   });
+
+  if (status === "APPROVED") {
+    await updateParticipationAfterCertificateReview({
+      participationId: certificate.volunteer_participation_id,
+      participationStatus: "APPROVED",
+      approvedVolunteerHour: participation.requested_volunteer_hour,
+    });
+  }
+
+  if (status === "REJECTED") {
+    await resetParticipationAfterCertificateReject({
+      participationId: certificate.volunteer_participation_id,
+    });
+  }
 
   return {
     certificateId,

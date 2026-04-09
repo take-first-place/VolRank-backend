@@ -2,6 +2,7 @@ import {
   uploadCertificate as uploadCertificateService,
   getMyCertificates as getMyCertificatesService,
   getCertificatesByParticipation as getCertificatesByParticipationService,
+  getAdminCertificates as getAdminCertificatesService,
   getPendingCertificates as getPendingCertificatesService,
   reviewCertificate as reviewCertificateService,
 } from "../../services/certificate/certificateService.js";
@@ -29,6 +30,13 @@ export const getMyCertificates = asyncHandler(async (req, res) => {
   const data = await getMyCertificatesService(userId);
 
   return success(res, data, "내 인증서 목록 조회 성공", 200);
+});
+
+// 관리자용 전체 인증서 목록 조회
+export const getAdminCertificates = asyncHandler(async (req, res) => {
+  const data = await getAdminCertificatesService();
+
+  return success(res, data, "관리자 인증서 목록 조회 성공", 200);
 });
 
 // 관리자용 대기 중 인증서 목록 조회
