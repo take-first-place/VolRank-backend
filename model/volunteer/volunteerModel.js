@@ -161,17 +161,57 @@ export const findVolunteers = async (query) => {
 
 export const findVolunteerById = async (id) => {
   const sql = `
-  SELECT id, title, description, volunteer_type, organization_name, region_code, place, recruit_start_at, recruit_end_at, start_date, end_date, recruit_count, status, external_url
-    FROM volunteer
-    WHERE id = ?
-    `;
+    SELECT
+      v.id,
+      v.title,
+      v.description,
+      v.volunteer_type,
+      v.organization_name,
+      v.region_code,
+      v.place,
+      v.recruit_start_at,
+      v.recruit_end_at,
+      v.start_date,
+      v.end_date,
+      v.recruit_count,
+      v.act_begin_time,
+      v.act_end_time,
+      v.status,
+      v.external_url,
+      r.name AS region_name,
+      r.level,
+      p.name AS parent_name
+    FROM volunteer v
+    LEFT JOIN region r
+      ON v.region_code = r.region_code
+    LEFT JOIN region p
+      ON r.parent_code = p.region_code
+    WHERE v.id = ?
+  `;
 
   const [rows] = await conn.query(sql, [id]);
 
   if (rows.length === 0) return null;
 
   const row = rows[0];
+
   return {
-    ...row,
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    volunteer_type: row.volunteer_type,
+    organization_name: row.organization_name,
+    region_code: row.region_code,
+    region_name: formatRegionName(row),
+    place: row.place,
+    recruit_start_at: row.recruit_start_at,
+    recruit_end_at: row.recruit_end_at,
+    start_date: row.start_date,
+    end_date: row.end_date,
+    recruit_count: row.recruit_count,
+    act_begin_time: row.act_begin_time,
+    act_end_time: row.act_end_time,
+    status: row.status,
+    external_url: row.external_url,
   };
 };
