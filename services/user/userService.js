@@ -57,6 +57,9 @@ export const getMyPageSummary = async (userId) => {
     nickname: user.nickname,
     username: user.username,
     regionCode: user.region_code,
+    regionName: user.region_name,
+    fullRegionName: user.full_region_name,
+    createdAt: user.created_at,
     totalVolunteerHour: Number(summary?.total_volunteer_hour || 0),
     approvedParticipationCount: Number(
       summary?.approved_participation_count || 0,
